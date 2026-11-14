@@ -12,3 +12,8 @@ var/
 *.sqlite3
 .DS_Store
 .ruff_cache/
+node_modules/
+*.pyc
+.coverage
+.benchmarks/
+.env
