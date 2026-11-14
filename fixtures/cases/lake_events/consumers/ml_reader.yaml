@@ -1,0 +1,12 @@
+consumer_id: ml_reader
+table: demo.lake_events
+description: Synthetic feature reader that has already adopted two versions.
+read_versions:
+  - v1
+  - v2
+mode: full
+allowed_type_widening:
+  - int32->int64
+allow_partition_change: true
+severity_overrides:
+  timestamp_unit_change: REVIEW

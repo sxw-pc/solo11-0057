@@ -1,0 +1,22 @@
+case_id: lake_events
+table: demo.lake_events
+description: Synthetic clickstream table with conflicting downstream contracts.
+schema_versions:
+  - version: v1
+    file: schemas/v1.yaml
+  - version: v2
+    file: schemas/v2.yaml
+  - version: v3
+    file: schemas/v3.yaml
+partition_specs:
+  - version: v1
+    file: partitions/v1.yaml
+  - version: v2
+    file: partitions/v2.yaml
+  - version: v3
+    file: partitions/v3.yaml
+consumers:
+  - file: consumers/bi_reader.yaml
+  - file: consumers/etl_writer.yaml
+  - file: consumers/ml_reader.yaml
+policy: policies/default.yaml

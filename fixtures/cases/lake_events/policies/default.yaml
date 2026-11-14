@@ -1,0 +1,9 @@
+policy_id: default
+description: Synthetic policy for offline demos.
+default_mode: backward
+forbidden_changes: []
+review_changes:
+  - rename_field
+  - field_order_change
+  - decimal_change
+  - struct_field_change

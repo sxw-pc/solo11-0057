@@ -1,0 +1,9 @@
+table: demo.lake_orders
+version: v2
+partition_keys:
+  - column: order_date
+    transform: bucket
+    bucket_count: 8
+sort_columns:
+  - created_at
+file_format: parquet

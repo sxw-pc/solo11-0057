@@ -1,0 +1,37 @@
+table: demo.lake_orders
+version: v2
+fields:
+  - name: order_id
+    type: string
+    nullable: false
+    field_id: 1
+  - name: created_at
+    type: timestamp_ms
+    nullable: false
+    field_id: 2
+  - name: order_date
+    type: date
+    nullable: false
+    field_id: 3
+  - name: customer_id
+    type: string
+    nullable: true
+    field_id: 4
+  - name: total_amount
+    type: decimal(12,2)
+    nullable: false
+    field_id: 5
+    default: 0.00
+  - name: currency
+    type: string
+    nullable: false
+    field_id: 6
+    default: USD
+  - name: channel
+    type: string
+    nullable: true
+    field_id: 8
+  - name: note
+    type: string
+    nullable: true
+    field_id: 7

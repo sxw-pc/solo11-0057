@@ -1,0 +1,11 @@
+table: demo.invalid_table
+version: v1
+fields:
+  - name: id
+    type: string
+    nullable: false
+    field_id: 1
+  - name: id
+    type: int64
+    nullable: false
+    field_id: 2

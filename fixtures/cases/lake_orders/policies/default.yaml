@@ -1,0 +1,6 @@
+policy_id: default
+description: Synthetic policy for the orders demo.
+default_mode: backward
+forbidden_changes: []
+review_changes:
+  - partition_change

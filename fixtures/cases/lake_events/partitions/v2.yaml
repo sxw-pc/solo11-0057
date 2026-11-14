@@ -1,0 +1,11 @@
+table: demo.lake_events
+version: v2
+partition_keys:
+  - column: event_date
+    transform: identity
+  - column: region
+    transform: bucket
+    bucket_count: 16
+sort_columns:
+  - event_time
+file_format: parquet

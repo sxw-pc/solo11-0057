@@ -1,0 +1,11 @@
+consumer_id: bi_reader
+table: demo.lake_events
+description: Synthetic BI reader anchored on the first published version.
+read_versions:
+  - v1
+mode: backward
+allowed_type_widening:
+  - int32->int64
+allow_partition_change: false
+severity_overrides:
+  field_order_change: PASS

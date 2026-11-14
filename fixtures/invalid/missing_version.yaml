@@ -1,0 +1,5 @@
+table: demo.invalid_table
+fields:
+  - name: id
+    type: string
+    nullable: false

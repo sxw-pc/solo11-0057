@@ -1,0 +1,6 @@
+table: demo.invalid_table
+version: v1
+fields:
+  - name: mystery
+    type: made_up_type
+    nullable: true

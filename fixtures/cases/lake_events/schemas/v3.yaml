@@ -1,0 +1,58 @@
+table: demo.lake_events
+version: v3
+fields:
+  - name: event_id
+    type: string
+    nullable: false
+    field_id: 1
+  - name: event_time
+    type: timestamp_us
+    nullable: false
+    field_id: 2
+  - name: event_date
+    type: date
+    nullable: false
+    field_id: 3
+  - name: user_id
+    type: int64
+    nullable: true
+    field_id: 4
+  - name: amount
+    type: decimal(12,2)
+    nullable: true
+    field_id: 5
+  - name: region
+    type: string
+    nullable: true
+    field_id: 10
+  - name: tags
+    type: list<int64>
+    nullable: true
+    field_id: 7
+  - name: payload
+    type: struct
+    nullable: true
+    field_id: 6
+    fields:
+      - name: action
+        type: string
+        nullable: false
+        field_id: 61
+      - name: channel
+        type: string
+        nullable: true
+        field_id: 63
+  - name: source_code
+    type: string
+    nullable: true
+    field_id: 9
+    aliases:
+      - old_code
+  - name: ingest_source
+    type: string
+    nullable: true
+    field_id: 11
+  - name: session_id
+    type: string
+    nullable: true
+    field_id: 12

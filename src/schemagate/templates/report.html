@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SchemaGate report — {{ result.case.case_id }}</title>
+  <style>{{ css|safe }}</style>
+</head>
+<body>
+{% macro severity(value) -%}<span class="severity-{{ value }}">{{ value }}</span>{%- endmacro %}
+{% macro finding_table(items) -%}
+<div class="table-wrap"><table>
+  <thead><tr><th>Consumer</th><th>Severity</th><th>Rule</th><th>Change ID</th><th>Field path</th><th>Evidence</th><th>Message</th></tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr><td>{{ item.consumer_id }}</td><td>{{ severity(item.severity) }}</td>
+      <td><code>{{ item.rule_id }}</code></td><td><code>{{ item.change_id }}</code></td>
+      <td>{{ item.field_path or "—" }}</td><td><code>{{ item.evidence_path }}</code></td>
+      <td>{{ item.message }}</td></tr>
+  {% else %}<tr><td colspan="7" class="empty">None.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{%- endmacro %}
+<main class="page">
+  <header class="hero">
+    <p class="eyebrow">schemagate · local decision report</p>
+    <h1>{{ result.case.case_id }}</h1>
+    <p class="lede">{{ result.case.description or "Local schema evolution review." }}</p>
+    <span class="badge badge-{{ result.decision|lower }}">{{ result.decision }}</span>
+  </header>
+  <section class="grid">
+    <div class="card"><h2>Case</h2><dl class="meta">
+      <dt>Table</dt><dd><code>{{ result.case.table }}</code></dd><dt>Decision</dt><dd>{{ severity(result.decision) }}</dd>
+      <dt>Tool</dt><dd><code>{{ result.tool_version }}</code></dd><dt>Rules</dt><dd><code>{{ result.rules_version }}</code></dd></dl></div>
+    <div class="card"><h2>Run identity</h2><dl class="meta">
+      <dt>Run ID</dt><dd><code>{{ result.run_id }}</code></dd><dt>Input fingerprint</dt><dd><code>{{ result.input_fingerprint }}</code></dd>
+      <dt>Report schema</dt><dd><code>{{ result.report_schema_version }}</code></dd><dt>Deterministic</dt><dd>yes — no clock or network input</dd></dl></div>
+    <div class="card"><h2>Counts</h2><dl class="meta">
+      <dt>Changes</dt><dd>{{ result.summary.change_count }}</dd><dt>Findings</dt><dd>{{ result.summary.finding_count }}</dd>
+      <dt>BLOCK</dt><dd>{{ result.summary.block_count }}</dd><dt>REVIEW</dt><dd>{{ result.summary.review_count }}</dd>
+      <dt>PASS</dt><dd>{{ result.summary.pass_count }}</dd></dl></div>
+  </section>
+  <section class="section"><h2>Versions</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Version</th><th>Fields</th><th>Schema fingerprint</th><th>Partition specification</th></tr></thead>
+      <tbody>
+      {% for version in result.versions %}
+        <tr><td><code>{{ version.version }}</code></td><td>{{ version.field_count }}</td><td><code>{{ version.schema_fingerprint }}</code></td>
+          <td>{% if version.partition_spec and version.partition_spec.partition_keys %}{% for key in version.partition_spec.partition_keys %}<span class="pill">{{ key.column }}:{{ key.transform }}</span> {% endfor %}{% else %}unpartitioned{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="section"><h2>Changes</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Pair</th><th>Type</th><th>Field path</th><th>Change ID</th><th>Evidence</th><th>Summary</th></tr></thead>
+      <tbody>
+      {% for change in result.changes %}
+        <tr><td><code>{{ change.pair_id }}</code></td><td><span class="pill">{{ change.change_type }}</span></td><td><code>{{ change.field_path }}</code></td>
+          <td><code>{{ change.change_id }}</code></td><td><code>{{ change.evidence_path }}</code></td><td>{{ change.summary }}</td></tr>
+      {% else %}<tr><td colspan="6" class="empty">No changes.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="section"><h2>Consumer compatibility matrix</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Consumer</th><th>Mode</th><th>Anchor</th>
+        {% for pair in result.compatibility_matrix.version_pairs %}<th>{{ pair }}</th>{% endfor %}<th>Overall</th></tr></thead>
+      <tbody>
+      {% for row in result.compatibility_matrix.rows %}
+        <tr><td>{{ row.consumer_id }}</td><td><code>{{ row.mode }}</code></td><td><code>{{ row.anchor_version }}</code></td>
+          {% for pair in result.compatibility_matrix.version_pairs %}<td>{{ severity(row.decisions.get(pair, "N/A")) }}</td>{% endfor %}<td>{{ severity(row.overall) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <h3>Findings</h3>
+    {% set all_findings = [] %}
+    {% for consumer in result.consumers %}{% for finding in consumer.findings %}{% set _ = all_findings.append(finding) %}{% endfor %}{% endfor %}
+    {{ finding_table(all_findings) }}
+  </section>
+  <section class="section"><h2>Blocking items</h2>{{ finding_table(result.blocked_items) }}
+    <h2>Review items</h2>{{ finding_table(result.review_items) }}</section>
+  <section class="section"><h2>Migration steps — advisory only</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Target</th><th>Action</th><th>Affected consumers</th><th>Prerequisites</th><th>Reversible</th><th>Status</th><th>Blocking reasons</th></tr></thead>
+      <tbody>
+      {% for step in result.migration_steps %}
+        <tr><td>{{ step.number }}</td><td><code>{{ step.target_version }}</code></td><td>{{ step.action }}</td><td>{{ step.affected_consumers|join(", ") or "—" }}</td>
+          <td>{{ step.prerequisites|join("; ") or "—" }}</td><td>{{ "yes" if step.reversible else "no" }}</td><td>{{ step.status }}</td><td>{{ step.blocking_reasons|join("; ") or "—" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="section"><h2>Rollback hints</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>For step</th><th>Pair</th><th>Roll back to</th><th>Retain fields</th><th>Consumers to roll back first</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for hint in result.rollback_hints %}
+        <tr><td>{{ hint.for_step }}</td><td><code>{{ hint.version_pair }}</code></td><td><code>{{ hint.rollback_to }}</code></td><td>{{ hint.retain_fields|join(", ") or "—" }}</td>
+          <td>{{ hint.consumers_to_rollback|join(", ") or "—" }}</td><td>{{ hint.note }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="section"><h2>Policy</h2>
+    <dl class="meta">
+      <dt>Policy ID</dt><dd><code>{{ result.policy.policy_id }}</code></dd><dt>Default mode</dt><dd><code>{{ result.policy.default_mode }}</code></dd>
+      <dt>Forbidden</dt><dd>{{ result.policy.forbidden_changes|join(", ") or "none" }}</dd><dt>Review</dt><dd>{{ result.policy.review_changes|join(", ") or "none" }}</dd>
+    </dl>
+    <p class="notice">{{ result.disclaimer }}</p>
+  </section>
+  <p class="footer">SchemaGate local offline report. Static evidence; no external resources.</p>
+</main>
+</body>
+</html>

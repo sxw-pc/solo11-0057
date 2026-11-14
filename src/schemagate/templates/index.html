@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SchemaGate — local schema evolution gate</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='report.css') }}">
+</head>
+<body>
+<main class="page">
+  <header class="hero">
+    <p class="eyebrow">schemagate · offline lakehouse admission</p>
+    <h1>Schema evolution gate</h1>
+    <p class="lede">Declarative, deterministic review of local table schema versions. No catalog connection, no data file reads, no DDL execution.</p>
+    <span class="badge badge-pass">LOCAL</span>
+  </header>
+  <section class="section">
+    <h2>Fixture cases</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Case</th><th>Table</th><th>Versions</th><th>Consumers</th><th>Description</th></tr></thead>
+      <tbody>
+      {% for case in cases %}
+        <tr><td><code>{{ case.case_id }}</code></td><td><code>{{ case.table }}</code></td>
+          <td>{{ case.versions|join(", ") }}</td><td>{{ case.consumer_count }}</td><td>{{ case.description or "—" }}</td></tr>
+      {% else %}<tr><td colspan="5" class="empty">No cases registered.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+    <p class="notice">Run a case with <code>POST /api/v1/runs</code> and a JSON body such as
+      <code>{"case_id":"lake_events"}</code>. List cases at <code>GET /api/v1/cases</code>.</p>
+  </section>
+  <section class="section">
+    <h2>Recent runs</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Run</th><th>Case</th><th>Decision</th><th>Attempts</th><th>Last seen</th><th>Reports</th></tr></thead>
+      <tbody>
+      {% for run in runs %}
+        <tr><td><code>{{ run.run_id }}</code></td><td><code>{{ run.case_id }}</code></td>
+          <td><span class="severity-{{ run.decision }}">{{ run.decision }}</span></td><td>{{ run.attempt_count }}</td>
+          <td>{{ run.last_seen_at }}</td>
+          <td><a href="/api/v1/runs/{{ run.run_id }}/report?format=html">html</a> ·
+            <a href="/api/v1/runs/{{ run.run_id }}/report?format=markdown">markdown</a> ·
+            <a href="/api/v1/runs/{{ run.run_id }}/report?format=json">json</a></td></tr>
+      {% else %}<tr><td colspan="6" class="empty">No runs yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="section">
+    <h2>Other endpoints</h2>
+    <dl class="meta">
+      <dt>Health</dt><dd><code>GET /healthz</code></dd>
+      <dt>Case run detail</dt><dd><code>GET /api/v1/runs/&lt;run_id&gt;</code></dd>
+      <dt>Ledger</dt><dd><code>GET /api/v1/ledger?case_id=lake_events&amp;limit=20</code></dd>
+    </dl>
+  </section>
+  <p class="footer">SchemaGate serves on loopback only. All report assets are local.</p>
+</main>
+</body>
+</html>

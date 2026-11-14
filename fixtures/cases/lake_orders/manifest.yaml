@@ -1,0 +1,16 @@
+case_id: lake_orders
+table: demo.lake_orders
+description: Synthetic order fact table with a partition layout change.
+schema_versions:
+  - version: v1
+    file: schemas/v1.yaml
+  - version: v2
+    file: schemas/v2.yaml
+partition_specs:
+  - version: v1
+    file: partitions/v1.yaml
+  - version: v2
+    file: partitions/v2.yaml
+consumers:
+  - file: consumers/finance_reader.yaml
+policy: policies/default.yaml

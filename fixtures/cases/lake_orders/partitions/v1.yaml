@@ -1,0 +1,8 @@
+table: demo.lake_orders
+version: v1
+partition_keys:
+  - column: order_date
+    transform: identity
+sort_columns:
+  - created_at
+file_format: parquet

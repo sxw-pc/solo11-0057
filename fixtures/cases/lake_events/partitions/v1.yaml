@@ -1,0 +1,8 @@
+table: demo.lake_events
+version: v1
+partition_keys:
+  - column: event_date
+    transform: identity
+sort_columns:
+  - event_time
+file_format: parquet

@@ -1,0 +1,51 @@
+table: demo.lake_events
+version: v1
+fields:
+  - name: event_id
+    type: string
+    nullable: false
+    field_id: 1
+    doc: Synthetic event identifier.
+  - name: event_time
+    type: timestamp_ms
+    nullable: false
+    field_id: 2
+  - name: event_date
+    type: date
+    nullable: false
+    field_id: 3
+  - name: user_id
+    type: int32
+    nullable: true
+    field_id: 4
+  - name: amount
+    type: decimal(10,2)
+    nullable: true
+    field_id: 5
+  - name: payload
+    type: struct
+    nullable: true
+    field_id: 6
+    fields:
+      - name: action
+        type: string
+        nullable: false
+        field_id: 61
+      - name: device
+        type: string
+        nullable: true
+        field_id: 62
+  - name: tags
+    type: list<string>
+    nullable: true
+    field_id: 7
+  - name: debug_flag
+    type: boolean
+    nullable: true
+    field_id: 8
+  - name: legacy_code
+    type: string
+    nullable: true
+    field_id: 9
+    aliases:
+      - old_code

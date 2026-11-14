@@ -1,0 +1,10 @@
+consumer_id: etl_writer
+table: demo.lake_events
+description: Synthetic batch writer anchored on the first published version.
+write_versions:
+  - v1
+mode: forward
+allowed_type_widening:
+  - int32->int64
+allow_partition_change: false
+severity_overrides: {}
