@@ -115,7 +115,9 @@ def test_nested_struct_change_keeps_nested_paths():
     assert _typed(changes, "add_field")[0].field_path == "payload.channel"
     aggregate = _typed(changes, "struct_field_change")
     assert aggregate[0].field_path == "payload"
-    assert aggregate[0].details["changed_paths"] == ["payload.channel"]
+    assert aggregate[0].details["changed_paths"] == {"new": ["payload.channel"]}
+    assert aggregate[0].evidence_direction == "new"
+    assert aggregate[0].evidence_version == "v2"
 
 
 def test_nested_struct_drop_and_field_order():

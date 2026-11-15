@@ -65,6 +65,11 @@ def diff_partition_specs(
         "old_file_format": old["file_format"],
         "new_file_format": new["file_format"],
     }
+    # A partition diff is a before/after comparison of two declarations, so its
+    # fact is only verifiable with both sides present. The evidence path points
+    # at the to-version, which holds the current declaration.
+    evidence_direction = "both"
+    evidence_version = new_version
     parts = []
     if details["added_keys"]:
         parts.append("added keys: " + ",".join(details["added_keys"]))
@@ -87,8 +92,10 @@ def diff_partition_specs(
             to_version=new_version,
             change_type="partition_change",
             field_path="$partition_spec",
-            evidence_path=partition_evidence(table, new_version),
+            evidence_path=partition_evidence(table, evidence_version),
             summary="partition specification changed: " + "; ".join(parts),
             details=details,
+            evidence_version=evidence_version,
+            evidence_direction=evidence_direction,
         ),
     )

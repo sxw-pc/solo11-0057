@@ -229,7 +229,7 @@ The report object includes:
 | `input_fingerprint` | `sha256:<hex>` over the normalized semantic case input. |
 | `versions` | Version labels, schema fingerprints, field counts, partition specs. |
 | `version_pairs` | Adjacent pairs, change counts, change IDs, and a partition-change flag. |
-| `changes` | Every change with IDs, evidence paths, and before/after details. |
+| `changes` | Every change with IDs, evidence paths, `evidence_version`, `evidence_direction`, and before/after details. |
 | `policy` | Policy ID, default mode, forbidden and review lists. |
 | `consumers` | Per-consumer mode, anchor, decision, and findings. |
 | `compatibility_matrix` | Consumer rows by version pair, including `N/A`. |

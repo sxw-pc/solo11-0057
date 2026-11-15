@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .config import SEVERITY_RANK
 from .models import (
+    EVIDENCE_DIRECTIONS,
     CaseData,
     Change,
     ConsumerContract,
@@ -12,6 +13,13 @@ from .models import (
     Policy,
     RuleOutcome,
 )
+
+# A direction is evaluated by the branch that can actually prove its failure.
+_BRANCH_DIRECTIONS = {
+    "backward": frozenset({"old", "both"}),
+    "forward": frozenset({"new", "both"}),
+}
+_NOT_APPLICABLE = "not-applicable"
 
 
 def _outcome(severity: str, rule_id: str, message: str, **details: object) -> RuleOutcome:
@@ -118,22 +126,123 @@ def _forward(change: Change, consumer: ConsumerContract) -> RuleOutcome:
     return _outcome("REVIEW", "SG-COMP-999", f"unclassified change at {path}")
 
 
+def _direction_known(change: Change) -> bool:
+    """A direction is interpretable when its version agrees with the pair.
+
+    A missing ``evidence_version`` is allowed for records built outside the
+    diff engine; an explicit version that contradicts the direction is not.
+    """
+    if not (
+        isinstance(change.evidence_direction, str)
+        and change.evidence_direction in EVIDENCE_DIRECTIONS
+    ):
+        return False
+    if not isinstance(change.evidence_version, str) or not change.evidence_version:
+        return True
+    expected = (
+        change.from_version
+        if change.evidence_direction == "old"
+        else change.to_version
+    )
+    return change.evidence_version == expected
+
+
+def _changed_paths_consistent(change: Change) -> bool:
+    """Verify the struct aggregate's grouped paths can explain its direction."""
+    if change.change_type != "struct_field_change":
+        return True
+    groups = change.details.get("changed_paths")
+    if not isinstance(groups, dict) or not groups:
+        return False
+    if not set(groups) <= set(EVIDENCE_DIRECTIONS):
+        return False
+    populated: dict[str, list] = {}
+    for direction, paths in groups.items():
+        if not isinstance(paths, list):
+            return False
+        if not paths:
+            continue
+        if not all(isinstance(path, str) and path for path in paths):
+            return False
+        populated[direction] = paths
+    if not populated:
+        return False
+    sides = set(populated)
+    if change.evidence_direction == "old":
+        return sides == {"old"}
+    if change.evidence_direction == "new":
+        return sides == {"new"}
+    if change.evidence_direction == "both":
+        return "both" in sides or {"old", "new"} <= sides
+    return False
+
+
+def _direction_review(direction: str, change: Change, reason: str) -> RuleOutcome:
+    return _outcome(
+        "REVIEW", "SG-COMP-304",
+        f"full mode cannot interpret {change.change_type} evidence direction "
+        f"for the {direction} branch at {change.field_path}; treating it as REVIEW",
+        branch=direction,
+        evidence_version=change.evidence_version,
+        evidence_direction=change.evidence_direction,
+        reason=reason,
+    )
+
+
+def _uninterpretable_full(
+    change: Change, details: dict[str, object], reason: str
+) -> RuleOutcome:
+    """Neither direction can explain this change, so both branches are REVIEW."""
+    outcome = _direction_review("backward", change, reason)
+    details["reason"] = reason
+    for direction in ("backward", "forward"):
+        details[f"{direction}_rule_id"] = outcome.rule_id
+        details[f"{direction}_severity"] = outcome.severity
+        details[f"{direction}_applicability"] = "direction-uninterpretable"
+    return _outcome(outcome.severity, outcome.rule_id, outcome.message, **details)
+
+
 def _full(change: Change, consumer: ConsumerContract) -> RuleOutcome:
-    backward = _backward(change, consumer)
-    forward = _forward(change, consumer)
-    details = {
-        "backward_rule_id": backward.rule_id,
-        "forward_rule_id": forward.rule_id,
-        "backward_severity": backward.severity,
-        "forward_severity": forward.severity,
-    }
-    if backward.severity == forward.severity == "PASS":
+    details = {"evidence_version": change.evidence_version,
+               "evidence_direction": change.evidence_direction}
+    if not _direction_known(change):
+        return _uninterpretable_full(change, details, "unknown evidence direction")
+    if not _changed_paths_consistent(change):
+        return _uninterpretable_full(
+            change, details, "grouped changed_paths disagree with the aggregate direction"
+        )
+    branches = {}
+    for direction, rules in (("backward", _backward), ("forward", _forward)):
+        in_scope = change.evidence_direction in _BRANCH_DIRECTIONS[direction]
+        details[f"{direction}_applicability"] = "evaluated" if in_scope else _NOT_APPLICABLE
+        if not in_scope:
+            # This branch has no evidence it could act on, so it must not
+            # contribute a severity to the full-mode aggregate.
+            details[f"{direction}_rule_id"] = _NOT_APPLICABLE
+            details[f"{direction}_severity"] = _NOT_APPLICABLE
+            continue
+        outcome = rules(change, consumer)
+        branches[direction] = outcome
+        details[f"{direction}_rule_id"] = outcome.rule_id
+        details[f"{direction}_severity"] = outcome.severity
+    if len(branches) == 1:
+        # Only one side of the transition carries evidence for this fact, so
+        # the full verdict is exactly that direction's verdict.
+        (direction, outcome), = branches.items()
+        return _outcome(
+            outcome.severity,
+            outcome.rule_id,
+            outcome.message + f" (full mode evaluated only the {direction} direction)",
+            **details,
+        )
+    severities = {outcome.severity for outcome in branches.values()}
+    if severities == {"PASS"}:
         return _outcome("PASS", "SG-COMP-300", f"full mode is compatible for {change.field_path}", **details)
-    if backward.severity == forward.severity == "REVIEW":
+    if severities == {"REVIEW"}:
         return _outcome("REVIEW", "SG-COMP-301", f"full mode requires review for {change.field_path}", **details)
-    if backward.severity == forward.severity == "BLOCK":
+    if severities == {"BLOCK"}:
         return _outcome("BLOCK", "SG-COMP-302", f"full mode blocks change at {change.field_path}", **details)
-    chosen = backward if SEVERITY_RANK[backward.severity] > SEVERITY_RANK[forward.severity] else forward
+    chosen = max(branches.values(), key=lambda item: SEVERITY_RANK[item.severity])
     return _outcome(
         chosen.severity,
         chosen.rule_id,

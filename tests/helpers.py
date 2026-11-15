@@ -8,11 +8,13 @@ import yaml
 
 from schemagate.diff_engine import diff_versions
 from schemagate.models import (
+    CHANGE_EVIDENCE_DIRECTIONS,
     CaseData,
     Change,
     ConsumerContract,
     PartitionSpec,
     Policy,
+    evidence_version_for,
 )
 from schemagate.naming import change_id, field_evidence, pair_id
 from schemagate.schema_parser import parse_schema_document
@@ -59,8 +61,20 @@ def make_change(
     from_version: str = "v1",
     to_version: str = "v2",
     table: str = "demo.unit",
+    evidence_version: str | None = None,
+    evidence_direction: str | None = None,
 ) -> Change:
     pair = pair_id(from_version, to_version)
+    direction = (
+        evidence_direction
+        if evidence_direction is not None
+        else CHANGE_EVIDENCE_DIRECTIONS.get(change_type) or "both"
+    )
+    version = (
+        evidence_version
+        if evidence_version is not None
+        else evidence_version_for(direction, from_version, to_version)
+    )
     return Change(
         change_id=change_id(table, pair, path, change_type),
         pair_id=pair,
@@ -68,9 +82,11 @@ def make_change(
         to_version=to_version,
         change_type=change_type,
         field_path=path,
-        evidence_path=field_evidence(table, to_version, path, "type"),
+        evidence_path=field_evidence(table, version, path, "type"),
         summary=f"{change_type} at {path}",
         details=details or {},
+        evidence_version=version,
+        evidence_direction=direction,
     )
 
 

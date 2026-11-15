@@ -153,7 +153,11 @@ value change is review-worthy in both directions.
 
 Nested member changes additionally produce specific leaf changes. The
 `struct_field_change` aggregate is evaluated as REVIEW as well. The consumer
-decision therefore reflects the strongest leaf severity and the aggregate.
+decision therefore reflects the strongest leaf severity and the aggregate. The
+aggregate's `evidence_direction` and grouped `changed_paths` are described in
+section 4; a nested struct that both drops and adds members is `both`, while a
+struct that only adds members is `new` and one that only drops members is
+`old`.
 
 ### 3.4 Unknown change types
 
@@ -164,8 +168,42 @@ documented classes.
 
 ## 4. Full mode
 
-`full` evaluates both the backward and forward rule and takes the stronger
-severity.
+Every change carries two provenance fields that full mode consults:
+
+- `evidence_version`: the declared version whose structure the evidence path
+  points into.
+- `evidence_direction`: which side of the version pair the fact is verifiable
+  on.
+
+| Direction | Meaning | Evidence version |
+| --- | --- | --- |
+| `old` | The fact is only provable from the from-version (for example a dropped field). | `from_version` |
+| `new` | The fact is only provable from the to-version (for example an added field). | `to_version` |
+| `both` | The fact requires both sides (renames, order changes, and every before/after comparison). | `to_version` |
+
+The direction is regulated per change class in `models.CHANGE_EVIDENCE_DIRECTIONS`:
+destructive field facts are `old`, additive field facts are `new`, and renames,
+field-order changes, and all comparison changes (`widen_type`, `nullable_*`,
+`default_*`, `decimal_change`, `timestamp_unit_change`, `element_type_change`,
+`constraint_change`, `type_change`) are `both`. `struct_field_change` is an
+aggregate: its direction is derived from grouped child evidence. If nested
+children contain both a drop (`old`) and an addition (`new`), the aggregate is
+`both`. Its `details.changed_paths` is a mapping from direction to paths rather
+than a flat list. A partition diff compares two declarations, so it is `both`.
+
+Full mode evaluates each rule branch against only the evidence that branch can
+act on:
+
+```text
+backward branch: evidence_direction in {old, both}
+forward branch:  evidence_direction in {new, both}
+```
+
+A branch whose direction is out of scope is recorded in the outcome details as
+`<branch>_applicability: not-applicable` with rule and severity
+`not-applicable`, and it contributes no severity. If only one branch is in
+scope, the result is exactly that branch's outcome and rule. If both branches
+are in scope, the stronger severity wins:
 
 | Backward and forward | Result | Rule |
 | --- | --- | --- |
@@ -175,11 +213,28 @@ severity.
 | Different | Stronger direction's severity and rule | that direction's rule |
 
 When the directions differ, details still include both rule IDs and both
-severities. Example: `default_added` is PASS backward and REVIEW forward, so
-full mode returns REVIEW with rule `SG-COMP-211`.
+severities, plus the applicability of each branch. Example: `default_added` is
+`both`, PASS backward and REVIEW forward, so full mode returns REVIEW with rule
+`SG-COMP-211`. A `drop_field` is `old`, so its forward branch is not applicable
+and full mode returns the backward rule `SG-COMP-103`.
 
 Declared widening is consumer-wide and applies in both directions, so a
-declared widening yields PASS and rule `SG-COMP-300` under full mode.
+declared widening yields PASS under full mode when the change is `both`.
+
+### 4.1 Uninterpretable direction
+
+If a change's direction information cannot be interpreted — an unknown or
+missing `evidence_direction`, an `evidence_version` that does not match the
+direction, or a `struct_field_change` whose grouped `changed_paths` disagree
+with its aggregate direction — both branches return `REVIEW` with rule
+`SG-COMP-304` instead of silently passing or blocking. The details name the
+`reason` and mark both branches `direction-uninterpretable`. This is defensive:
+the diff engine always emits a valid direction, so the fallback only triggers
+for externally constructed or corrupted `Change` records.
+
+Direction filtering applies to full mode only. `backward` and `forward`
+consumers keep their existing rule tables regardless of direction; a forward
+consumer still blocks a dropped field even though that fact is `old` evidence.
 
 ## 5. None mode
 

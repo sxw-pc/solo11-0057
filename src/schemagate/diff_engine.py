@@ -21,7 +21,7 @@ class _Differ:
         self.pair = pair_id(old.version, new.version)
         self.changes: list[Change] = []
     def _change(self, change_type: str, path: str, evidence_version: str,
-                aspect: str, summary: str,
+                evidence_direction: str, aspect: str, summary: str,
                 details: dict[str, Any] | None = None) -> None:
         self.changes.append(Change(
             change_id=change_id(self.table, self.pair, path, change_type),
@@ -33,6 +33,8 @@ class _Differ:
             evidence_path=field_evidence(self.table, evidence_version, path, aspect),
             summary=summary,
             details=details or {},
+            evidence_version=evidence_version,
+            evidence_direction=evidence_direction,
         ))
     @staticmethod
     def _match(old_fields: tuple[FieldSpec, ...], new_fields: tuple[FieldSpec, ...]):
@@ -69,7 +71,7 @@ class _Differ:
         if old_sequence == new_sequence:
             return
         path = f"{parent_path}.$fields" if parent_path else "$fields"
-        self._change("field_order_change", path, self.new.version, "order",
+        self._change("field_order_change", path, self.new.version, "both", "order",
                      f"field order changed for {len(old_sequence)} shared field(s)",
                      {"old_order": old_sequence, "new_order": new_sequence})
     def diff_field_list(self, old_fields: tuple[FieldSpec, ...],
@@ -78,14 +80,14 @@ class _Differ:
         self._order_change(matches, new_fields, parent_path)
         for field in sorted(unmatched_old, key=lambda item: (item.order, item.name)):
             self._change(
-                "drop_field", field.path, self.old.version, "presence",
+                "drop_field", field.path, self.old.version, "old", "presence",
                 f"field dropped: {field.path} ({field_type_signature(field)})",
                 {"type": field_type_signature(field), "field_id": field.field_id,
                  "required": field.required},
             )
         for field in sorted(unmatched_new, key=lambda item: (item.order, item.name)):
             self._change(
-                "add_field", field.path, self.new.version, "presence",
+                "add_field", field.path, self.new.version, "new", "presence",
                 f"field added: {field.path} ({field_type_signature(field)})",
                 {"type": field_type_signature(field), "nullable": field.nullable,
                  "has_default": field.has_default, "default": field.default,
@@ -95,7 +97,7 @@ class _Differ:
                 matches, key=lambda item: (item[1].order, item[1].name)):
             if renamed:
                 self._change(
-                    "rename_field", new.path, self.new.version, "name",
+                    "rename_field", new.path, self.new.version, "both", "name",
                     f"field explicitly renamed: {old.path} -> {new.path}",
                     {"old_path": old.path, "new_path": new.path,
                      "field_id": new.field_id, "old_aliases": list(old.aliases),
@@ -106,27 +108,50 @@ class _Differ:
         if old.nullable != new.nullable:
             self._change(
                 "nullable_to_true" if new.nullable else "nullable_to_false",
-                new.path, self.new.version, "nullable",
+                new.path, self.new.version, "both", "nullable",
                 f"nullable changed: {old.path} {old.nullable} -> {new.nullable}",
                 {"old_nullable": old.nullable, "new_nullable": new.nullable},
             )
         if old.has_default != new.has_default:
             self._change(
                 "default_added" if new.has_default else "default_removed",
-                new.path, self.new.version, "default",
+                new.path, self.new.version, "both", "default",
                 f"default {'added' if new.has_default else 'removed'} for {new.path}",
                 {"old_default": old.default, "new_default": new.default},
             )
         elif old.has_default and canonical_json(old.default) != canonical_json(new.default):
-            self._change("default_changed", new.path, self.new.version, "default",
+            self._change("default_changed", new.path, self.new.version, "both", "default",
                          f"default changed for {new.path}",
                          {"old_default": old.default, "new_default": new.default})
         if canonical_json(old.constraints) != canonical_json(new.constraints):
-            self._change("constraint_change", new.path, self.new.version, "constraints",
+            self._change("constraint_change", new.path, self.new.version, "both", "constraints",
                          f"field constraints changed for {new.path}",
                          {"old_constraints": old.constraints,
                           "new_constraints": new.constraints})
         self.compare_types(old, new)
+    @staticmethod
+    def _group_paths(child_changes: list[Change]) -> dict[str, list[str]]:
+        """Group nested paths by the side whose evidence proves each fact."""
+        grouped: dict[str, set[str]] = {}
+        for child in child_changes:
+            grouped.setdefault(child.evidence_direction, set()).add(child.field_path)
+        return {
+            direction: sorted(grouped[direction])
+            for direction in ("old", "new", "both")
+            if grouped.get(direction)
+        }
+    @staticmethod
+    def _aggregate_direction(groups: dict[str, list[str]]) -> str:
+        """A nested aggregate spans both sides once old and new facts coexist."""
+        if "both" in groups:
+            return "both"
+        if "old" in groups and "new" in groups:
+            return "both"
+        if "old" in groups:
+            return "old"
+        if "new" in groups:
+            return "new"
+        return ""
     def compare_types(self, old: FieldSpec, new: FieldSpec) -> None:
         old_type, new_type = old.type_spec, new.type_spec
         if old_type.kind == new_type.kind == "struct":
@@ -134,11 +159,16 @@ class _Differ:
             self.diff_field_list(old.children, new.children, new.path)
             child_changes = self.changes[before:]
             if child_changes:
+                groups = self._group_paths(child_changes)
+                direction = self._aggregate_direction(groups)
+                evidence_version = (
+                    self.old.version if direction == "old" else self.new.version
+                )
                 paths = sorted({item.field_path for item in child_changes})
                 self._change(
-                    "struct_field_change", new.path, self.new.version, "fields",
+                    "struct_field_change", new.path, evidence_version, direction, "fields",
                     f"nested struct fields changed under {new.path}: {len(paths)} path(s)",
-                    {"changed_paths": paths, "type": field_type_signature(new)},
+                    {"changed_paths": groups, "type": field_type_signature(new)},
                 )
             return
         old_sig, new_sig = field_type_signature(old), field_type_signature(new)
@@ -146,7 +176,7 @@ class _Differ:
             return
         if old_type.kind == new_type.kind and old_type.kind in {"list", "map"}:
             self._change(
-                "element_type_change", new.path, self.new.version, "type",
+                "element_type_change", new.path, self.new.version, "both", "type",
                 f"nested collection type changed for {new.path}: {old_sig} -> {new_sig}",
                 {"old_type": old_sig, "new_type": new_sig, "collection": old_type.kind},
             )
@@ -154,7 +184,7 @@ class _Differ:
         if old_type.kind == new_type.kind == "decimal":
             direction = decimal_direction(old_type, new_type)
             self._change(
-                "decimal_change", new.path, self.new.version, "type",
+                "decimal_change", new.path, self.new.version, "both", "type",
                 f"decimal changed for {new.path}: {old_sig} -> {new_sig} ({direction})",
                 {"old_type": old_sig, "new_type": new_sig, "direction": direction,
                  "old_precision": old_type.precision, "old_scale": old_type.scale,
@@ -163,7 +193,7 @@ class _Differ:
             return
         if old_type.kind.startswith("timestamp_") and new_type.kind.startswith("timestamp_"):
             self._change(
-                "timestamp_unit_change", new.path, self.new.version, "type",
+                "timestamp_unit_change", new.path, self.new.version, "both", "type",
                 f"timestamp unit changed for {new.path}: {old_type.kind} -> {new_type.kind}",
                 {"old_type": old_sig, "new_type": new_sig},
             )
@@ -172,13 +202,13 @@ class _Differ:
         if direction is not None:
             self._change(
                 "widen_type" if direction == "widen" else "narrow_type",
-                new.path, self.new.version, "type",
+                new.path, self.new.version, "both", "type",
                 f"type {direction}ed for {new.path}: {old_sig} -> {new_sig}",
                 {"old_type": old_sig, "new_type": new_sig, "direction": direction},
             )
             return
         self._change(
-            "type_change", new.path, self.new.version, "type",
+            "type_change", new.path, self.new.version, "both", "type",
             f"incompatible type change for {new.path}: {old_sig} -> {new_sig}",
             {"old_type": old_sig, "new_type": new_sig, "old_kind": old_type.kind,
              "new_kind": new_type.kind},

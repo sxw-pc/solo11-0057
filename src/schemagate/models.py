@@ -5,6 +5,57 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from .config import CHANGE_TYPES
+
+# The declarative side(s) of a version pair that a change fact is observed on.
+# ``old`` means the fact is only verifiable in the from-version, ``new`` means
+# only in the to-version, and ``both`` means both sides carry evidence (for
+# example a rename whose old and new names are both present).
+EVIDENCE_DIRECTIONS = ("old", "new", "both")
+
+# The regulated evidence direction for every change class.  ``None`` marks an
+# aggregate whose direction is derived from its component facts:
+# ``struct_field_change`` from nested child evidence and ``partition_change``
+# from the two partition declarations it compares.  Destructive field facts are
+# ``old``, additive field facts are ``new``, and every fact that is only
+# provable by comparing both sides is ``both``.
+CHANGE_EVIDENCE_DIRECTIONS: dict[str, str | None] = {
+    "drop_field": "old",
+    "add_field": "new",
+    "struct_field_change": None,
+    "partition_change": None,
+    "rename_field": "both",
+    "field_order_change": "both",
+    "widen_type": "both",
+    "narrow_type": "both",
+    "type_change": "both",
+    "nullable_to_true": "both",
+    "nullable_to_false": "both",
+    "default_added": "both",
+    "default_removed": "both",
+    "default_changed": "both",
+    "element_type_change": "both",
+    "decimal_change": "both",
+    "timestamp_unit_change": "both",
+    "constraint_change": "both",
+}
+
+assert set(CHANGE_EVIDENCE_DIRECTIONS) == set(CHANGE_TYPES), (
+    "every change type must declare an evidence direction rule"
+)
+
+
+def evidence_version_for(direction: str, from_version: str, to_version: str) -> str:
+    """Return the version whose structure holds the evidence for a fact.
+
+    ``old`` facts are read from the from-version; ``new`` and ``both`` facts
+    point at the to-version, which is where the current (post-change) value is
+    declared.  Callers must only pass a declared direction.
+    """
+    if direction not in EVIDENCE_DIRECTIONS:
+        raise ValueError(f"unknown evidence direction: {direction!r}")
+    return from_version if direction == "old" else to_version
+
 
 @dataclass(frozen=True)
 class TypeSpec:
@@ -119,6 +170,12 @@ class Change:
     evidence_path: str
     summary: str
     details: dict[str, Any] = field(default_factory=dict)
+    # The declarative version that owns the evidence path, and the side of the
+    # version pair that the fact is verifiable on.  ``evidence_direction`` is
+    # one of ``EVIDENCE_DIRECTIONS``; an empty or unknown value is treated as
+    # uninterpretable by full-mode compatibility evaluation.
+    evidence_version: str = ""
+    evidence_direction: str = ""
 
 
 @dataclass(frozen=True)

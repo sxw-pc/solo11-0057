@@ -251,3 +251,27 @@ The test does not sandbox the test runner itself, and a new dependency could
 still attempt network access outside the covered paths. The combination of
 socket-level tests, local-only code, and startup host validation is stronger
 than documentation alone.
+
+## ADR-017: Evidence direction is explicit and direction-filtered in full mode
+
+**Decision.** Every `Change` records `evidence_version` and
+`evidence_direction` (`old`, `new`, or `both`). Directions are regulated per
+change class: destructive facts are `old`, additive facts are `new`, and
+comparisons and renames are `both`. `struct_field_change` derives its direction
+from grouped child evidence. Full mode evaluates only the branch that can carry
+the change's evidence: backward sees `{old, both}` and forward sees
+`{new, both}`. An uninterpretable direction yields `REVIEW` under
+`SG-COMP-304`.
+
+**Alternatives.** Infer direction inside the renderer by inspecting the
+evidence path; keep the severity-only max; reject uninterpretable directions
+with an error; derive direction lazily in compatibility code.
+
+**Consequences.** A reader can now tell whether a fact came from the old or new
+version without parsing the path. Full mode no longer lets a branch that cannot
+observe a fact veto it: an added field is no longer blocked by the backward
+branch, and a dropped field is no longer blocked by the forward branch under
+full mode. `backward` and `forward` consumers are unchanged. The cost is an
+extra provenance field per change and a new `SG-COMP-304` fallback that must be
+kept in the docs. Path parsing in the renderer was rejected because the path is
+a display artifact and must not be the source of truth.

@@ -136,16 +136,20 @@
       "change_type": "drop_field",
       "consumer_id": "ml_reader",
       "details": {
+        "backward_applicability": "evaluated",
         "backward_rule_id": "SG-COMP-103",
         "backward_severity": "BLOCK",
-        "forward_rule_id": "SG-COMP-203",
-        "forward_severity": "BLOCK"
+        "evidence_direction": "old",
+        "evidence_version": "v2",
+        "forward_applicability": "not-applicable",
+        "forward_rule_id": "not-applicable",
+        "forward_severity": "not-applicable"
       },
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
       "field_path": "payload.device",
-      "message": "full mode blocks change at payload.device",
+      "message": "backward mode blocks field removal at payload.device (full mode evaluated only the backward direction)",
       "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-302",
+      "rule_id": "SG-COMP-103",
       "severity": "BLOCK"
     },
     {
@@ -154,8 +158,12 @@
       "change_type": "element_type_change",
       "consumer_id": "ml_reader",
       "details": {
+        "backward_applicability": "evaluated",
         "backward_rule_id": "SG-COMP-117",
         "backward_severity": "BLOCK",
+        "evidence_direction": "both",
+        "evidence_version": "v3",
+        "forward_applicability": "evaluated",
         "forward_rule_id": "SG-COMP-217",
         "forward_severity": "BLOCK"
       },
@@ -198,7 +206,9 @@
           "source_code"
         ]
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.$fields.order",
+      "evidence_version": "v2",
       "field_path": "$fields",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -233,7 +243,9 @@
         "sort_columns_changed": false,
         "transform_changes": []
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v2.partition_spec",
+      "evidence_version": "v2",
       "field_path": "$partition_spec",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -248,7 +260,9 @@
         "required": false,
         "type": "boolean"
       },
+      "evidence_direction": "old",
       "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
+      "evidence_version": "v1",
       "field_path": "debug_flag",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -266,7 +280,9 @@
         "required": true,
         "type": "string"
       },
+      "evidence_direction": "new",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
+      "evidence_version": "v2",
       "field_path": "ingest_source",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -277,12 +293,16 @@
       "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
       "change_type": "struct_field_change",
       "details": {
-        "changed_paths": [
-          "payload.channel"
-        ],
+        "changed_paths": {
+          "new": [
+            "payload.channel"
+          ]
+        },
         "type": "struct<action:string,channel:string,device:string>"
       },
+      "evidence_direction": "new",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
+      "evidence_version": "v2",
       "field_path": "payload",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -300,7 +320,9 @@
         "required": false,
         "type": "string"
       },
+      "evidence_direction": "new",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.channel.presence",
+      "evidence_version": "v2",
       "field_path": "payload.channel",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -318,7 +340,9 @@
         "required": false,
         "type": "string"
       },
+      "evidence_direction": "new",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.region.presence",
+      "evidence_version": "v2",
       "field_path": "region",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -339,7 +363,9 @@
         ],
         "old_path": "legacy_code"
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
+      "evidence_version": "v2",
       "field_path": "source_code",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -354,7 +380,9 @@
         "new_type": "int64",
         "old_type": "int32"
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.user_id.type",
+      "evidence_version": "v2",
       "field_path": "user_id",
       "from_version": "v1",
       "pair_id": "v1->v2",
@@ -405,7 +433,9 @@
           }
         ]
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
+      "evidence_version": "v3",
       "field_path": "$partition_spec",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -424,7 +454,9 @@
         "old_scale": 2,
         "old_type": "decimal(10,2)"
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
+      "evidence_version": "v3",
       "field_path": "amount",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -438,7 +470,9 @@
         "new_type": "timestamp_us",
         "old_type": "timestamp_ms"
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
+      "evidence_version": "v3",
       "field_path": "event_time",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -452,7 +486,9 @@
         "new_nullable": true,
         "old_nullable": false
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.ingest_source.nullable",
+      "evidence_version": "v3",
       "field_path": "ingest_source",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -463,12 +499,16 @@
       "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
       "change_type": "struct_field_change",
       "details": {
-        "changed_paths": [
-          "payload.device"
-        ],
+        "changed_paths": {
+          "old": [
+            "payload.device"
+          ]
+        },
         "type": "struct<action:string,channel:string>"
       },
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "evidence_direction": "old",
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
+      "evidence_version": "v2",
       "field_path": "payload",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -483,7 +523,9 @@
         "required": false,
         "type": "string"
       },
+      "evidence_direction": "old",
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
+      "evidence_version": "v2",
       "field_path": "payload.device",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -501,7 +543,9 @@
         "required": false,
         "type": "string"
       },
+      "evidence_direction": "new",
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
+      "evidence_version": "v3",
       "field_path": "session_id",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -516,7 +560,9 @@
         "new_type": "list<int64>",
         "old_type": "list<string>"
       },
+      "evidence_direction": "both",
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
+      "evidence_version": "v3",
       "field_path": "tags",
       "from_version": "v2",
       "pair_id": "v2->v3",
@@ -732,7 +778,7 @@
           "change_type": "struct_field_change",
           "consumer_id": "bi_reader",
           "details": {},
-          "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
           "field_path": "payload",
           "message": "nested struct fields changed at payload",
           "pair_id": "v2->v3",
@@ -948,7 +994,7 @@
           "change_type": "struct_field_change",
           "consumer_id": "etl_writer",
           "details": {},
-          "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
           "field_path": "payload",
           "message": "nested struct fields changed at payload",
           "pair_id": "v2->v3",
@@ -1020,8 +1066,12 @@
           "change_type": "decimal_change",
           "consumer_id": "ml_reader",
           "details": {
+            "backward_applicability": "evaluated",
             "backward_rule_id": "SG-COMP-115",
             "backward_severity": "REVIEW",
+            "evidence_direction": "both",
+            "evidence_version": "v3",
+            "forward_applicability": "evaluated",
             "forward_rule_id": "SG-COMP-215",
             "forward_severity": "REVIEW"
           },
@@ -1052,8 +1102,12 @@
           "change_type": "nullable_to_true",
           "consumer_id": "ml_reader",
           "details": {
+            "backward_applicability": "evaluated",
             "backward_rule_id": "SG-COMP-109",
             "backward_severity": "PASS",
+            "evidence_direction": "both",
+            "evidence_version": "v3",
+            "forward_applicability": "evaluated",
             "forward_rule_id": "SG-COMP-209",
             "forward_severity": "PASS"
           },
@@ -1069,16 +1123,20 @@
           "change_type": "struct_field_change",
           "consumer_id": "ml_reader",
           "details": {
+            "backward_applicability": "evaluated",
             "backward_rule_id": "SG-COMP-118",
             "backward_severity": "REVIEW",
-            "forward_rule_id": "SG-COMP-218",
-            "forward_severity": "REVIEW"
+            "evidence_direction": "old",
+            "evidence_version": "v2",
+            "forward_applicability": "not-applicable",
+            "forward_rule_id": "not-applicable",
+            "forward_severity": "not-applicable"
           },
-          "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
           "field_path": "payload",
-          "message": "full mode requires review for payload",
+          "message": "nested struct fields changed at payload (full mode evaluated only the backward direction)",
           "pair_id": "v2->v3",
-          "rule_id": "SG-COMP-301",
+          "rule_id": "SG-COMP-118",
           "severity": "REVIEW"
         },
         {
@@ -1086,16 +1144,20 @@
           "change_type": "drop_field",
           "consumer_id": "ml_reader",
           "details": {
+            "backward_applicability": "evaluated",
             "backward_rule_id": "SG-COMP-103",
             "backward_severity": "BLOCK",
-            "forward_rule_id": "SG-COMP-203",
-            "forward_severity": "BLOCK"
+            "evidence_direction": "old",
+            "evidence_version": "v2",
+            "forward_applicability": "not-applicable",
+            "forward_rule_id": "not-applicable",
+            "forward_severity": "not-applicable"
           },
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
           "field_path": "payload.device",
-          "message": "full mode blocks change at payload.device",
+          "message": "backward mode blocks field removal at payload.device (full mode evaluated only the backward direction)",
           "pair_id": "v2->v3",
-          "rule_id": "SG-COMP-302",
+          "rule_id": "SG-COMP-103",
           "severity": "BLOCK"
         },
         {
@@ -1103,16 +1165,20 @@
           "change_type": "add_field",
           "consumer_id": "ml_reader",
           "details": {
-            "backward_rule_id": "SG-COMP-102",
-            "backward_severity": "PASS",
+            "backward_applicability": "not-applicable",
+            "backward_rule_id": "not-applicable",
+            "backward_severity": "not-applicable",
+            "evidence_direction": "new",
+            "evidence_version": "v3",
+            "forward_applicability": "evaluated",
             "forward_rule_id": "SG-COMP-202",
             "forward_severity": "PASS"
           },
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
           "field_path": "session_id",
-          "message": "full mode is compatible for session_id",
+          "message": "optional field added at session_id (full mode evaluated only the forward direction)",
           "pair_id": "v2->v3",
-          "rule_id": "SG-COMP-300",
+          "rule_id": "SG-COMP-202",
           "severity": "PASS"
         },
         {
@@ -1120,8 +1186,12 @@
           "change_type": "element_type_change",
           "consumer_id": "ml_reader",
           "details": {
+            "backward_applicability": "evaluated",
             "backward_rule_id": "SG-COMP-117",
             "backward_severity": "BLOCK",
+            "evidence_direction": "both",
+            "evidence_version": "v3",
+            "forward_applicability": "evaluated",
             "forward_rule_id": "SG-COMP-217",
             "forward_severity": "BLOCK"
           },
@@ -1189,7 +1259,7 @@
         "bi_reader: backward mode blocks field removal at payload.device [SG-COMP-103; demo_lake_events:v2->v3:payload.device:drop_field]",
         "bi_reader: collection element type changed at tags [SG-COMP-117; demo_lake_events:v2->v3:tags:element_type_change]",
         "bi_reader: timestamp unit changed at event_time [SG-COMP-116; demo_lake_events:v2->v3:event_time:timestamp_unit_change]",
-        "ml_reader: full mode blocks change at payload.device [SG-COMP-302; demo_lake_events:v2->v3:payload.device:drop_field]",
+        "ml_reader: backward mode blocks field removal at payload.device (full mode evaluated only the backward direction) [SG-COMP-103; demo_lake_events:v2->v3:payload.device:drop_field]",
         "ml_reader: full mode blocks change at tags [SG-COMP-302; demo_lake_events:v2->v3:tags:element_type_change]"
       ],
       "number": 3,
@@ -1236,7 +1306,7 @@
         "etl_writer: forward mode blocks field removal at debug_flag [SG-COMP-203; demo_lake_events:v1->v2:debug_flag:drop_field]",
         "etl_writer: forward mode blocks field removal at payload.device [SG-COMP-203; demo_lake_events:v2->v3:payload.device:drop_field]",
         "etl_writer: timestamp unit changed at event_time [SG-COMP-216; demo_lake_events:v2->v3:event_time:timestamp_unit_change]",
-        "ml_reader: full mode blocks change at payload.device [SG-COMP-302; demo_lake_events:v2->v3:payload.device:drop_field]",
+        "ml_reader: backward mode blocks field removal at payload.device (full mode evaluated only the backward direction) [SG-COMP-103; demo_lake_events:v2->v3:payload.device:drop_field]",
         "ml_reader: full mode blocks change at tags [SG-COMP-302; demo_lake_events:v2->v3:tags:element_type_change]"
       ],
       "number": 5,
@@ -1332,7 +1402,7 @@
       "change_type": "struct_field_change",
       "consumer_id": "bi_reader",
       "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
       "field_path": "payload",
       "message": "nested struct fields changed at payload",
       "pair_id": "v2->v3",
@@ -1423,7 +1493,7 @@
       "change_type": "struct_field_change",
       "consumer_id": "etl_writer",
       "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
       "field_path": "payload",
       "message": "nested struct fields changed at payload",
       "pair_id": "v2->v3",
@@ -1436,8 +1506,12 @@
       "change_type": "decimal_change",
       "consumer_id": "ml_reader",
       "details": {
+        "backward_applicability": "evaluated",
         "backward_rule_id": "SG-COMP-115",
         "backward_severity": "REVIEW",
+        "evidence_direction": "both",
+        "evidence_version": "v3",
+        "forward_applicability": "evaluated",
         "forward_rule_id": "SG-COMP-215",
         "forward_severity": "REVIEW"
       },
@@ -1470,16 +1544,20 @@
       "change_type": "struct_field_change",
       "consumer_id": "ml_reader",
       "details": {
+        "backward_applicability": "evaluated",
         "backward_rule_id": "SG-COMP-118",
         "backward_severity": "REVIEW",
-        "forward_rule_id": "SG-COMP-218",
-        "forward_severity": "REVIEW"
+        "evidence_direction": "old",
+        "evidence_version": "v2",
+        "forward_applicability": "not-applicable",
+        "forward_rule_id": "not-applicable",
+        "forward_severity": "not-applicable"
       },
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
       "field_path": "payload",
-      "message": "full mode requires review for payload",
+      "message": "nested struct fields changed at payload (full mode evaluated only the backward direction)",
       "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-301",
+      "rule_id": "SG-COMP-118",
       "severity": "REVIEW"
     }
   ],

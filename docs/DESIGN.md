@@ -69,7 +69,7 @@ runtime.
 | `canonical.py` | JSON normalization, canonical serialization, schema and input fingerprints. |
 | `diff_engine.py` | Pairwise structured schema diff with explicit rename evidence. |
 | `partition_rules.py` | Declarative partition-spec diff. |
-| `compatibility.py` | Consumer/mode/policy evaluation and aggregation inputs. |
+| `compatibility.py` | Consumer/mode/policy evaluation and aggregation inputs, including direction-filtered full mode. |
 | `planner.py` | Advisory migration ordering and rollback hints. |
 | `runner.py` | Result assembly, deterministic run ID, report writes, service facade. |
 | `ledger.py` | SQLite schema, idempotent run registration, parameterized queries. |
@@ -223,6 +223,16 @@ the declarative structure, for example:
 tables.demo_lake_events.versions.v2.fields.user_id.type
 tables.demo_lake_events.versions.v3.partition_spec
 ```
+
+Every change also carries `evidence_version` and `evidence_direction`
+(`old`, `new`, or `both`). The direction is regulated per change class: a
+dropped field is only provable from the old version, an added field only from
+the new version, and renames, order changes, and before/after comparisons need
+both sides. `evidence_version` names the version the evidence path points into:
+`from_version` for `old`, `to_version` for `new` and `both`. The
+`struct_field_change` aggregate derives its direction from grouped child
+evidence, and its `details.changed_paths` maps each direction to the nested
+paths it proves.
 
 Changes are sorted by `(field_path, change_type, change_id)` before evaluation.
 

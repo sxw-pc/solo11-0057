@@ -93,12 +93,15 @@ def render_markdown_report(result: dict[str, Any]) -> str:
     change_rows = [
         [
             change["pair_id"], change["change_type"], change["field_path"],
+            change.get("evidence_version") or "-",
+            change.get("evidence_direction") or "-",
             change["change_id"], change["evidence_path"], change["summary"],
         ]
         for change in result["changes"]
     ]
     lines.extend(_table(
-        ["Pair", "Type", "Field path", "Change ID", "Evidence", "Summary"],
+        ["Pair", "Type", "Field path", "Evidence version", "Evidence direction",
+         "Change ID", "Evidence", "Summary"],
         change_rows,
     ))
     lines.extend(["", "## Consumer compatibility matrix", ""])

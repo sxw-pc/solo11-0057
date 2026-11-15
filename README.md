@@ -294,10 +294,14 @@ BLOCK > REVIEW > PASS
 ```
 
 Each finding contains a stable rule ID, change ID, consumer ID, evidence path,
-message, and structured details. A consumer with no pending changes receives a
-synthetic `SG-COMP-000` PASS finding so the matrix and ledger never have a
-silent gap. Partition changes default to `REVIEW`, escalate to `BLOCK` when the
-policy forbids them, and can be explicitly allowed or overridden by a consumer.
+message, and structured details. Every change also records `evidence_version`
+and `evidence_direction` (`old`, `new`, or `both`) so a report reader can tell
+which side of a version pair a fact was proven on; full mode evaluates each
+direction against only the evidence it can act on. A consumer with no pending
+changes receives a synthetic `SG-COMP-000` PASS finding so the matrix and
+ledger never have a silent gap. Partition changes default to `REVIEW`,
+escalate to `BLOCK` when the policy forbids them, and can be explicitly allowed
+or overridden by a consumer.
 
 The full precedence and rule-ID matrix are in
 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). The architectural rationale is
@@ -309,9 +313,10 @@ in [docs/DESIGN.md](docs/DESIGN.md). Trade-offs are recorded in
 Every run writes three files under the reports directory:
 
 - `<run_id>.json`: canonical indented JSON.
-- `<run_id>.md`: deterministic Markdown with version pairs, changes,
-  compatibility matrix, findings, blocked/review items, advisory migration
-  steps, rollback hints, policy, and a scope notice.
+- `<run_id>.md`: deterministic Markdown with version pairs, changes (including
+  evidence version and direction), compatibility matrix, findings,
+  blocked/review items, advisory migration steps, rollback hints, policy, and a
+  scope notice.
 - `<run_id>.html`: a self-contained HTML report with inline CSS.
 
 Reports include the case ID and table, input fingerprint, schema versions and

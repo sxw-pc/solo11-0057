@@ -51,3 +51,38 @@ def test_html_and_json_outputs_are_stable(events_result):
     payload = json.loads(first)
     assert payload["report_schema_version"] == 1
     assert payload["decision"] == "BLOCK"
+
+
+def test_changes_expose_stable_evidence_metadata(events_result):
+    changes = events_result["changes"]
+    assert changes
+    for change in changes:
+        assert change["evidence_version"] in {"v1", "v2", "v3"}
+        assert change["evidence_direction"] in {"old", "new", "both"}
+        assert f".versions.{change['evidence_version']}." in change["evidence_path"]
+    by_type = {change["change_type"]: change for change in changes}
+    assert by_type["drop_field"]["evidence_direction"] == "old"
+    assert by_type["add_field"]["evidence_direction"] == "new"
+    assert by_type["rename_field"]["evidence_direction"] == "both"
+    assert by_type["field_order_change"]["evidence_direction"] == "both"
+
+
+def test_markdown_shows_evidence_version_and_direction(events_result):
+    rendered = render_markdown_report(events_result)
+    assert "Evidence version" in rendered
+    assert "Evidence direction" in rendered
+    assert "| v1->v2 | drop_field | debug_flag | v1 | old |" in rendered
+
+
+def test_json_rendering_backfills_missing_evidence_keys():
+    rendered = render_json_report({
+        "changes": [{
+            "change_id": "x", "pair_id": "v1->v2", "from_version": "v1",
+            "to_version": "v2", "change_type": "drop_field",
+            "field_path": "legacy", "evidence_path": "p", "summary": "s",
+            "details": {},
+        }]
+    })
+    payload = json.loads(rendered)
+    assert payload["changes"][0]["evidence_version"] == ""
+    assert payload["changes"][0]["evidence_direction"] == ""
