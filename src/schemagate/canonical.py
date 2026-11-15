@@ -138,16 +138,24 @@ def case_payload(case: CaseData) -> dict[str, Any]:
         "description": case.description,
         "versions": versions,
         "consumers": [
-            {
-                "consumer_id": consumer.consumer_id,
-                "table": consumer.table,
-                "read_versions": sorted(consumer.read_versions),
-                "write_versions": sorted(consumer.write_versions),
-                "mode": consumer.mode,
-                "allowed_type_widening": sorted(consumer.allowed_type_widening),
-                "allow_partition_change": consumer.allow_partition_change,
-                "severity_overrides": normalize_json_value(consumer.severity_overrides),
-            }
+            dict(
+                {
+                    "consumer_id": consumer.consumer_id,
+                    "table": consumer.table,
+                    "read_versions": sorted(consumer.read_versions),
+                    "write_versions": sorted(consumer.write_versions),
+                    "mode": consumer.mode,
+                    "allowed_type_widening": sorted(consumer.allowed_type_widening),
+                    "allow_partition_change": consumer.allow_partition_change,
+                    "severity_overrides": normalize_json_value(consumer.severity_overrides),
+                },
+                # Omit the key when undeclared so pre-existing case fingerprints
+                # and run IDs remain stable.
+                **({"constraint_acceptance": {
+                    item.path: list(item.accepted)
+                    for item in consumer.constraint_acceptance
+                }} if consumer.constraint_acceptance else {}),
+            )
             for consumer in sorted(case.consumers, key=lambda item: item.consumer_id)
         ],
         "policy": {

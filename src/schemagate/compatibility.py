@@ -13,9 +13,68 @@ from .models import (
     RuleOutcome,
 )
 
+_CONSTRAINT_DIRECTIONS = ("widen", "narrow", "incomparable")
+
 
 def _outcome(severity: str, rule_id: str, message: str, **details: object) -> RuleOutcome:
     return RuleOutcome(severity, rule_id, message, dict(details))
+
+
+def _constraint_direction(change: Change, child: dict | None = None) -> str:
+    """Direction carried by a constraint change or one of its children."""
+    source = child if child is not None else change.details
+    direction = source.get("direction")
+    return direction if direction in _CONSTRAINT_DIRECTIONS else "incomparable"
+
+
+def _constraint_review(path: str, direction: str, review_rule: str) -> RuleOutcome:
+    return _outcome(
+        "REVIEW", review_rule,
+        f"field constraints changed at {path} ({direction})",
+        direction=direction,
+    )
+
+
+def _constraint_outcome(consumer: ConsumerContract, path: str, direction: str,
+                        review_rule: str) -> RuleOutcome:
+    """Grade one constraint determination against a declared path contract."""
+    acceptance = consumer.acceptance_for(path)
+    if acceptance is None:
+        return _constraint_review(path, direction, review_rule)
+    if acceptance.accepts(direction):
+        return _outcome(
+            "PASS", "SG-COMP-120",
+            f"consumer contract accepts {direction} constraint change at {path}",
+            direction=direction, accepted=list(acceptance.accepted),
+        )
+    return _outcome(
+        "BLOCK", "SG-COMP-121",
+        f"consumer contract at {path} does not accept {direction} constraint change",
+        direction=direction, accepted=list(acceptance.accepted),
+    )
+
+
+def _constraint_rule(change: Change, consumer: ConsumerContract,
+                     review_rule: str) -> RuleOutcome:
+    """Grade a constraint change by every changed path it carries."""
+    children = change.details.get("children")
+    if not isinstance(children, list) or not children:
+        return _constraint_outcome(
+            consumer, change.field_path, _constraint_direction(change), review_rule
+        )
+    outcomes = []
+    for child in children:
+        if not isinstance(child, dict) or not isinstance(child.get("path"), str):
+            continue
+        outcomes.append(_constraint_outcome(
+            consumer, child["path"], _constraint_direction(change, child),
+            review_rule,
+        ))
+    if not outcomes:
+        return _constraint_outcome(
+            consumer, change.field_path, _constraint_direction(change), review_rule
+        )
+    return max(outcomes, key=lambda item: SEVERITY_RANK[item.severity])
 
 
 def _allowed_widening(consumer: ConsumerContract, change: Change) -> bool:
@@ -68,7 +127,7 @@ def _backward(change: Change, consumer: ConsumerContract) -> RuleOutcome:
     if kind == "struct_field_change":
         return _outcome("REVIEW", "SG-COMP-118", f"nested struct fields changed at {path}")
     if kind == "constraint_change":
-        return _outcome("REVIEW", "SG-COMP-119", f"field constraints changed at {path}")
+        return _constraint_rule(change, consumer, "SG-COMP-119")
     return _outcome("REVIEW", "SG-COMP-999", f"unclassified change at {path}")
 
 
@@ -114,7 +173,7 @@ def _forward(change: Change, consumer: ConsumerContract) -> RuleOutcome:
     if kind == "struct_field_change":
         return _outcome("REVIEW", "SG-COMP-218", f"nested struct fields changed at {path}")
     if kind == "constraint_change":
-        return _outcome("REVIEW", "SG-COMP-219", f"field constraints changed at {path}")
+        return _constraint_rule(change, consumer, "SG-COMP-219")
     return _outcome("REVIEW", "SG-COMP-999", f"unclassified change at {path}")
 
 

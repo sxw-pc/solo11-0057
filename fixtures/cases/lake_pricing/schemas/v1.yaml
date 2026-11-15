@@ -1,0 +1,31 @@
+table: demo.lake_orders
+version: v1
+fields:
+  - name: order_id
+    type: string
+    nullable: false
+    field_id: 1
+  - name: price_details
+    type: struct
+    nullable: true
+    field_id: 2
+    fields:
+      - name: amount
+        type: decimal(10,2)
+        nullable: true
+        field_id: 21
+        constraints:
+          min: 0
+          max: 100
+      - name: currency
+        type: string
+        nullable: true
+        field_id: 22
+        constraints:
+          values:
+            - a
+            - b
+  - name: note
+    type: string
+    nullable: true
+    field_id: 3

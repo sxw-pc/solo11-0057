@@ -1,0 +1,13 @@
+consumer_id: audit_reader
+table: demo.lake_orders
+description: Audit reader that only declares a constraint contract on order_id.
+read_versions:
+  - v1
+mode: backward
+allowed_type_widening: []
+allow_partition_change: false
+severity_overrides: {}
+constraint_acceptance:
+  order_id:
+    accepts:
+      - widen

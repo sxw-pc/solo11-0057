@@ -32,9 +32,11 @@ def test_loads_lake_orders(orders_case):
 
 
 def test_discovery_lists_cases_sorted(loader):
-    assert loader.case_ids() == ("lake_events", "lake_orders")
+    assert loader.case_ids() == ("lake_events", "lake_orders", "lake_pricing")
     summaries = loader.list_cases()
-    assert [item["case_id"] for item in summaries] == ["lake_events", "lake_orders"]
+    assert [item["case_id"] for item in summaries] == [
+        "lake_events", "lake_orders", "lake_pricing"
+    ]
     assert summaries[0]["schema_count"] == 3
 
 

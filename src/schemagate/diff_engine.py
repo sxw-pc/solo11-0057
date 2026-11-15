@@ -9,10 +9,14 @@ from .models import CaseData, Change, FieldSpec, SchemaVersion
 from .naming import change_id, field_evidence, pair_id
 from .partition_rules import diff_partition_specs
 from .type_rules import (
+    aggregate_directions,
     classify_widening,
+    compare_constraints,
     decimal_direction,
     field_type_signature,
 )
+
+_CONSTRAINT_SEVERITY = {"widen": 0, "incomparable": 1, "narrow": 2}
 
 
 class _Differ:
@@ -121,20 +125,155 @@ class _Differ:
             self._change("default_changed", new.path, self.new.version, "default",
                          f"default changed for {new.path}",
                          {"old_default": old.default, "new_default": new.default})
-        if canonical_json(old.constraints) != canonical_json(new.constraints):
-            self._change("constraint_change", new.path, self.new.version, "constraints",
-                         f"field constraints changed for {new.path}",
-                         {"old_constraints": old.constraints,
-                          "new_constraints": new.constraints})
+        # Struct-level constraints are merged with descendant constraint changes
+        # in compare_types so both share one aggregate change ID. A struct that
+        # becomes a scalar is handled here because no child diff exists.
+        if not (old.type_spec.kind == new.type_spec.kind == "struct"):
+            entries = compare_constraints(old.constraints, new.constraints)
+            if entries:
+                self._emit_constraint_change(old, new, entries)
         self.compare_types(old, new)
+    def _emit_constraint_change(self, old: FieldSpec, new: FieldSpec,
+                                entries) -> None:
+        direction = aggregate_directions(entries)
+        self._change(
+            "constraint_change", new.path, self.new.version, "constraints",
+            f"constraints {direction} for {new.path}: "
+            f"{self._constraint_fragments(entries)}",
+            {
+                "old_constraints": old.constraints,
+                "new_constraints": new.constraints,
+                "direction": direction,
+                "parent_path": new.path if new.type_spec.kind == "struct" else (
+                    new.path.rsplit(".", 1)[0] if "." in new.path else ""
+                ),
+                "changed_paths": [new.path],
+                "constraint_changes": list(entries),
+            },
+        )
+    @staticmethod
+    def _constraint_value(value: Any) -> str:
+        if value is None:
+            return "unbounded"
+        return canonical_json(value)
+    @classmethod
+    def _constraint_fragments(cls, entries) -> str:
+        fragments = []
+        for entry in entries:
+            name, direction = entry["constraint"], entry["direction"]
+            if entry["change"] == "added":
+                fragments.append(
+                    f"{name} added ({direction}; {cls._constraint_value(entry['new_value'])})"
+                )
+            elif entry["change"] == "removed":
+                fragments.append(
+                    f"{name} removed ({direction}; was {cls._constraint_value(entry['old_value'])})"
+                )
+            else:
+                fragments.append(
+                    f"{name} {direction} "
+                    f"({cls._constraint_value(entry['old_value'])} -> "
+                    f"{cls._constraint_value(entry['new_value'])})"
+                )
+        return "; ".join(fragments)
+    def _emit_struct_constraint_change(
+        self,
+        old: FieldSpec,
+        new: FieldSpec,
+        own_entries,
+        child_constraint_changes: list[Change],
+    ) -> None:
+        """Aggregate descendant constraint changes at the struct path.
+
+        Details keep the parent path and the affected child paths so the
+        aggregate remains explainable without silently replacing the child
+        findings, which are still emitted and evaluated on their own paths.
+        """
+        children: dict[str, dict[str, Any]] = {}
+        for change in child_constraint_changes:
+            details = change.details
+            if details.get("aggregated"):
+                nested = details.get("children", [])
+            else:
+                nested = [{
+                    "path": change.field_path,
+                    "direction": details.get("direction", "incomparable"),
+                    "constraint_changes": details.get("constraint_changes", []),
+                }]
+            for child in nested:
+                path = child.get("path")
+                direction = child.get("direction", "incomparable")
+                if not isinstance(path, str):
+                    continue
+                previous = children.get(path)
+                if (previous is None or
+                        _CONSTRAINT_SEVERITY.get(direction, 1) >
+                        _CONSTRAINT_SEVERITY.get(previous["direction"], 1)):
+                    children[path] = {
+                        "path": path,
+                        "direction": direction,
+                        "constraint_changes": child.get("constraint_changes", []),
+                    }
+        if own_entries:
+            own = {
+                "path": new.path,
+                "direction": aggregate_directions(own_entries),
+                "constraint_changes": list(own_entries),
+            }
+            previous = children.get(new.path)
+            if (previous is None or
+                    _CONSTRAINT_SEVERITY[own["direction"]] >
+                    _CONSTRAINT_SEVERITY[previous["direction"]]):
+                children[new.path] = own
+        ordered = [children[path] for path in sorted(children)]
+        direction = max(
+            (child["direction"] for child in ordered),
+            key=lambda value: _CONSTRAINT_SEVERITY.get(value, 1),
+            default="incomparable",
+        )
+        fragments = "; ".join(
+            f"{child['path']} {child['direction']}"
+            + (f" ({self._constraint_fragments(child['constraint_changes'])})"
+               if child.get("constraint_changes") else "")
+            for child in ordered
+        )
+        self._change(
+            "constraint_change", new.path, self.new.version, "constraints",
+            f"constraint changes under {new.path} ({direction}): {fragments}",
+            {
+                "aggregated": True,
+                "old_constraints": old.constraints,
+                "new_constraints": new.constraints,
+                "direction": direction,
+                "parent_path": new.path,
+                "changed_paths": [child["path"] for child in ordered],
+                "children": ordered,
+            },
+        )
     def compare_types(self, old: FieldSpec, new: FieldSpec) -> None:
         old_type, new_type = old.type_spec, new.type_spec
         if old_type.kind == new_type.kind == "struct":
+            own_entries = compare_constraints(old.constraints, new.constraints)
             before = len(self.changes)
             self.diff_field_list(old.children, new.children, new.path)
             child_changes = self.changes[before:]
-            if child_changes:
-                paths = sorted({item.field_path for item in child_changes})
+            child_constraint_changes = [
+                item for item in child_changes if item.change_type == "constraint_change"
+            ]
+            if own_entries or child_constraint_changes:
+                self._emit_struct_constraint_change(
+                    old, new, own_entries, child_constraint_changes
+                )
+            # Constraint changes are absorbed by the per-path constraint
+            # findings above. Do not repeat them inside the generic struct
+            # aggregate: a flat REVIEW there could mask a more severe child
+            # determination (for example a narrowed range).
+            remaining = [
+                item for item in child_changes
+                if item.change_type != "constraint_change"
+            ]
+            if remaining:
+                paths = sorted({item.field_path for item in remaining})
                 self._change(
                     "struct_field_change", new.path, self.new.version, "fields",
                     f"nested struct fields changed under {new.path}: {len(paths)} path(s)",

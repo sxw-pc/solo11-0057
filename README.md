@@ -232,7 +232,23 @@ allowed_type_widening: [int32->int64]
 allow_partition_change: false
 severity_overrides:
   field_order_change: PASS
+constraint_acceptance:
+  price_details.amount:
+    accepts: [widen]        # a tightening here is a contract violation -> BLOCK
+  price_details.currency:
+    accepts: [widen]
 ```
+
+`constraint_acceptance` declares, per `(consumer_id, path)`, which constraint
+directions the consumer can tolerate. `widen`, `narrow`, and `incomparable` are
+the accepted vocabulary; the list shorthand (`price_details.currency: [widen]`)
+is equivalent to `{accepts: [widen]}`. An accepted direction yields `PASS`; a
+change on a declared path whose direction is not accepted yields `BLOCK`; a
+path with no declaration keeps the ordinary `REVIEW`. The nearest declared
+path wins, and an undeclared sibling is never covered by another path's
+declaration. This is deliberately separate from `severity_overrides`, which
+can only override a whole change type and therefore cannot express two
+consumers disagreeing about two sibling fields of the same struct.
 
 `read_versions` and `write_versions` may be declared separately; at least one
 must be present. Version order inside either list is canonicalized. The

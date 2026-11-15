@@ -82,6 +82,22 @@ class Policy:
 
 
 @dataclass(frozen=True)
+class ConstraintAcceptance:
+    """One consumer's declared tolerance for constraint changes at a path.
+
+    ``accepted`` holds the constraint directions (``widen``, ``narrow``,
+    ``incomparable``) the consumer can consume without review. A declared path
+    whose observed direction is not in this set is a contract violation and is
+    escalated to BLOCK. Paths absent from the declaration keep the generic
+    REVIEW behavior.
+    """
+    path: str
+    accepted: tuple[str, ...] = ()
+    def accepts(self, direction: str) -> bool:
+        return direction in self.accepted
+
+
+@dataclass(frozen=True)
 class ConsumerContract:
     consumer_id: str
     table: str
@@ -91,9 +107,26 @@ class ConsumerContract:
     allowed_type_widening: tuple[str, ...] = ()
     allow_partition_change: bool = False
     severity_overrides: dict[str, str] = field(default_factory=dict)
+    constraint_acceptance: tuple[ConstraintAcceptance, ...] = ()
     @property
     def declared_versions(self) -> tuple[str, ...]:
         return self.read_versions + self.write_versions
+    def acceptance_for(self, path: str) -> ConstraintAcceptance | None:
+        """Return the declaration for ``path``: exact, else nearest ancestor.
+
+        A declaration on a struct path applies to its descendants unless a
+        more specific path overrides it. A sibling declaration never leaks
+        onto another path.
+        """
+        by_path = {item.path: item for item in self.constraint_acceptance}
+        if path in by_path:
+            return by_path[path]
+        parts = path.split(".")
+        for index in range(len(parts) - 1, 0, -1):
+            candidate = ".".join(parts[:index])
+            if candidate in by_path:
+                return by_path[candidate]
+        return None
 
 
 @dataclass(frozen=True)

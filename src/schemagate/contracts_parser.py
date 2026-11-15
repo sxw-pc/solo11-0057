@@ -7,8 +7,14 @@ from typing import Any
 
 from .config import CHANGE_TYPES, COMPAT_MODES, PARTITION_TRANSFORMS, SEVERITIES
 from .errors import SchemaGateError
-from .models import ConsumerContract, PartitionKey, PartitionSpec, Policy
-from .type_rules import normalize_widening
+from .models import (
+    ConstraintAcceptance,
+    ConsumerContract,
+    PartitionKey,
+    PartitionSpec,
+    Policy,
+)
+from .type_rules import CONSTRAINT_DIRECTIONS, normalize_widening
 
 _ID_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 
@@ -70,6 +76,76 @@ def parse_policy(document: Any) -> Policy:
     )
 
 
+_CONSTRAINT_PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
+def _parse_constraint_acceptance(value: Any) -> tuple[ConstraintAcceptance, ...]:
+    """Parse per-path constraint acceptance declarations.
+
+    Two equivalent declarative forms are accepted::
+
+        constraint_acceptance:
+          price_details.amount:
+            accepts: [widen]
+          price_details.currency: [widen]
+
+    ``accepts`` may also be named ``accepted``; the list form is shorthand for
+    ``{accepts: [...]}``. An empty list means the consumer accepts nothing at
+    that path, so any constraint change there is a violation.
+    """
+    if value is None:
+        return ()
+    if not isinstance(value, dict):
+        raise _error(
+            "SG-LOAD-010", "constraint_acceptance must be a mapping of path to declaration"
+        )
+    declarations: list[ConstraintAcceptance] = []
+    seen: set[str] = set()
+    for raw_path, raw_declaration in value.items():
+        if not isinstance(raw_path, str) or not _CONSTRAINT_PATH_RE.match(raw_path.strip()):
+            raise _error(
+                "SG-LOAD-010",
+                "constraint_acceptance path must be a dotted field path",
+                path=raw_path,
+            )
+        path = raw_path.strip()
+        if path in seen:
+            raise _error("SG-LOAD-010", "duplicate constraint_acceptance path", path=path)
+        seen.add(path)
+        if isinstance(raw_declaration, list):
+            raw_declaration = {"accepts": raw_declaration}
+        if not isinstance(raw_declaration, dict):
+            raise _error(
+                "SG-LOAD-010",
+                "constraint_acceptance entry must be a mapping or list",
+                path=path,
+            )
+        unknown = sorted(set(raw_declaration) - {"accepts", "accepted"})
+        if unknown:
+            raise _error(
+                "SG-LOAD-010",
+                "unknown constraint_acceptance attributes",
+                path=path,
+                attributes=unknown,
+            )
+        raw_accepted = raw_declaration.get(
+            "accepts", raw_declaration.get("accepted", [])
+        )
+        accepted = _string_list(raw_accepted, f"constraint_acceptance.{path}", "SG-LOAD-010")
+        for direction in accepted:
+            if direction not in CONSTRAINT_DIRECTIONS:
+                raise _error(
+                    "SG-LOAD-010",
+                    "constraint_acceptance direction must be widen, narrow, or incomparable",
+                    path=path,
+                    direction=direction,
+                )
+        declarations.append(
+            ConstraintAcceptance(path=path, accepted=tuple(sorted(set(accepted))))
+        )
+    return tuple(sorted(declarations, key=lambda item: item.path))
+
+
 def parse_consumer(
     document: Any,
     *,
@@ -82,7 +158,7 @@ def parse_consumer(
     allowed = {
         "consumer_id", "table", "read_versions", "write_versions", "mode",
         "allowed_type_widening", "allow_partition_change", "severity_overrides",
-        "description",
+        "constraint_acceptance", "description",
     }
     unknown = sorted(set(document) - allowed)
     if unknown:
@@ -126,6 +202,7 @@ def parse_consumer(
         if severity not in SEVERITIES:
             raise _error("SG-LOAD-010", "unknown severity in severity_overrides", severity=severity)
         normalized_overrides[change_type] = severity
+    acceptance = _parse_constraint_acceptance(document.get("constraint_acceptance"))
     return ConsumerContract(
         consumer_id=consumer_id,
         table=table,
@@ -135,6 +212,7 @@ def parse_consumer(
         allowed_type_widening=tuple(sorted(set(normalized_widening))),
         allow_partition_change=allow_partition,
         severity_overrides=dict(sorted(normalized_overrides.items())),
+        constraint_acceptance=acceptance,
     )
 
 

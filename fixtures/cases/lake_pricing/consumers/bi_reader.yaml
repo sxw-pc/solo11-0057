@@ -1,0 +1,16 @@
+consumer_id: bi_reader
+table: demo.lake_orders
+description: BI reader that accepts widening but not tightening of price constraints.
+read_versions:
+  - v1
+mode: backward
+allowed_type_widening: []
+allow_partition_change: false
+severity_overrides: {}
+constraint_acceptance:
+  price_details.amount:
+    accepts:
+      - widen
+  price_details.currency:
+    accepts:
+      - widen

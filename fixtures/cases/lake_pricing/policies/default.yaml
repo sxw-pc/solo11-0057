@@ -1,0 +1,5 @@
+policy_id: default
+description: Synthetic policy for the local price-structure case.
+default_mode: backward
+forbidden_changes: []
+review_changes: []

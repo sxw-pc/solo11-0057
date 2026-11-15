@@ -144,7 +144,9 @@ types before widening classification.
 | Default value changed | REVIEW | `SG-COMP-113` | REVIEW | `SG-COMP-213` |
 | Field order changed | REVIEW | `SG-COMP-114` | REVIEW | `SG-COMP-214` |
 | Nested struct member changed | REVIEW | `SG-COMP-118` | REVIEW | `SG-COMP-218` |
-| Constraint changed | REVIEW | `SG-COMP-119` | REVIEW | `SG-COMP-219` |
+| Constraint changed, path not declared | REVIEW | `SG-COMP-119` | REVIEW | `SG-COMP-219` |
+| Constraint direction accepted by consumer path | PASS | `SG-COMP-120` | PASS | `SG-COMP-120` |
+| Constraint direction not accepted by consumer path | BLOCK | `SG-COMP-121` | BLOCK | `SG-COMP-121` |
 
 Default-added asymmetry is intentional. An old reader encountering a new
 schema with an added default is generally tolerant, while a new reader that
@@ -154,8 +156,45 @@ value change is review-worthy in both directions.
 Nested member changes additionally produce specific leaf changes. The
 `struct_field_change` aggregate is evaluated as REVIEW as well. The consumer
 decision therefore reflects the strongest leaf severity and the aggregate.
+Constraint changes are the exception: they already carry a per-path
+determination, so they are excluded from `struct_field_change` and aggregated
+separately at the struct path. Otherwise one flat REVIEW could mask a more
+severe child determination.
 
-### 3.4 Unknown change types
+### 3.4 Constraint directions
+
+The diff engine compares common declarative constraint attributes and labels
+each field with a direction:
+
+| Constraint | Widening | Narrowing | Incomparable |
+| --- | --- | --- | --- |
+| `min` / `exclusive_min` | lower bound | higher bound | non-numeric value |
+| `max` / `exclusive_max` | higher bound | lower bound | non-numeric value |
+| `max_length` / `max_items` | larger limit | smaller limit | non-numeric value |
+| `min_length` / `min_items` | smaller floor | larger floor | non-numeric value |
+| `exact_length` / `exact_items` | same value | — | any changed value |
+| `enum` / `values` / `allowed_values` | superset | subset | overlapping or disjoint sets |
+| `pattern` / `regex` | unchanged | — | any rewrite |
+| `charset` / `character_set` | unchanged | — | any rewrite |
+
+Adding an ordered bound tightens; removing one relaxes. If one attribute
+narrows and another widens on the same field, the field is `narrow` (a definite
+tightening dominates). Pattern rewrites and other changes without a comparable
+order are always `incomparable`; they are never coerced into a numeric
+comparison.
+
+A consumer may declare `constraint_acceptance` per path with the directions it
+tolerates. For every changed path carried by a constraint finding:
+
+- no declaration → `REVIEW` (`SG-COMP-119` / `SG-COMP-219`);
+- declared and accepted → `PASS` (`SG-COMP-120`);
+- declared but not accepted → `BLOCK` (`SG-COMP-121`).
+
+For a struct aggregate the severity is the strongest child outcome. Matching
+uses the exact path first, then the nearest declared ancestor; a declaration on
+one sibling never covers another sibling.
+
+### 3.5 Unknown change types
 
 Any change type not covered by a mode table returns `REVIEW` with
 `SG-COMP-999`. This is a defensive fallback; the loader rejects unknown change

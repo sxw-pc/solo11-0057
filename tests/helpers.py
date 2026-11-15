@@ -10,6 +10,7 @@ from schemagate.diff_engine import diff_versions
 from schemagate.models import (
     CaseData,
     Change,
+    ConstraintAcceptance,
     ConsumerContract,
     PartitionSpec,
     Policy,
@@ -83,6 +84,7 @@ def make_consumer(
     allowed: tuple[str, ...] = (),
     allow_partition: bool = False,
     overrides: dict[str, str] | None = None,
+    acceptance: tuple[ConstraintAcceptance, ...] = (),
 ) -> ConsumerContract:
     return ConsumerContract(
         consumer_id=consumer_id,
@@ -93,6 +95,7 @@ def make_consumer(
         allowed_type_widening=allowed,
         allow_partition_change=allow_partition,
         severity_overrides=overrides or {},
+        constraint_acceptance=acceptance,
     )
 
 

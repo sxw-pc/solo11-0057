@@ -17,8 +17,10 @@ def test_healthz(client):
 
 def test_cases_endpoint(client):
     payload = client.get("/api/v1/cases").get_json()
-    assert payload["count"] == 2
-    assert [item["case_id"] for item in payload["items"]] == ["lake_events", "lake_orders"]
+    assert payload["count"] == 3
+    assert [item["case_id"] for item in payload["items"]] == [
+        "lake_events", "lake_orders", "lake_pricing"
+    ]
 
 
 def test_create_run_returns_decision_and_run_id(client):

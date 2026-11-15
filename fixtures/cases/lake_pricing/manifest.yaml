@@ -1,0 +1,12 @@
+case_id: lake_pricing
+table: demo.lake_orders
+description: Local price-structure case with one widening and one tightening constraint.
+schema_versions:
+  - version: v1
+    file: schemas/v1.yaml
+  - version: v2
+    file: schemas/v2.yaml
+consumers:
+  - file: consumers/bi_reader.yaml
+  - file: consumers/audit_reader.yaml
+policy: policies/default.yaml
