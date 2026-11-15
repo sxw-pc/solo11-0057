@@ -1,9 +1,10 @@
 consumer_id: ml_reader
 table: demo.lake_events
-description: Synthetic feature reader that has already adopted two versions.
+description: Synthetic feature pipeline that still reads v1 but writes the newest v3 schema.
 read_versions:
   - v1
-  - v2
+write_versions:
+  - v3
 mode: full
 allowed_type_widening:
   - int32->int64

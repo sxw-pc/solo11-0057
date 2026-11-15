@@ -43,14 +43,28 @@ CREATE TABLE IF NOT EXISTS changes (
 CREATE TABLE IF NOT EXISTS consumer_verdicts (
     run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE CASCADE,
     consumer_id TEXT NOT NULL, decision TEXT NOT NULL, mode TEXT NOT NULL,
-    anchor_version TEXT NOT NULL, finding_count INTEGER NOT NULL,
+    anchor_version TEXT NOT NULL, read_anchor_version TEXT NOT NULL,
+    write_anchor_version TEXT NOT NULL, shadowed_finding_count INTEGER NOT NULL,
+    finding_count INTEGER NOT NULL,
     payload_json TEXT NOT NULL, PRIMARY KEY (run_id, consumer_id)
 );
 CREATE TABLE IF NOT EXISTS findings (
     run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE CASCADE,
     consumer_id TEXT NOT NULL, change_id TEXT NOT NULL, severity TEXT NOT NULL,
     rule_id TEXT NOT NULL, evidence_path TEXT NOT NULL, pair_id TEXT NOT NULL,
+    read_status TEXT NOT NULL, write_status TEXT NOT NULL,
+    read_shadow INTEGER NOT NULL, write_shadow INTEGER NOT NULL,
+    downgrade_shadow INTEGER NOT NULL,
     payload_json TEXT NOT NULL, PRIMARY KEY (run_id, consumer_id, change_id)
+);
+CREATE TABLE IF NOT EXISTS window_verdicts (
+    run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE CASCADE,
+    consumer_id TEXT NOT NULL, pair_id TEXT NOT NULL,
+    read_status TEXT NOT NULL, write_status TEXT NOT NULL,
+    read_verdict TEXT NOT NULL, write_verdict TEXT NOT NULL,
+    read_shadowed_count INTEGER NOT NULL, write_shadowed_count INTEGER NOT NULL,
+    payload_json TEXT NOT NULL,
+    PRIMARY KEY (run_id, consumer_id, pair_id)
 );
 CREATE INDEX IF NOT EXISTS idx_runs_case_seen ON runs(case_id, last_seen_at);
 CREATE INDEX IF NOT EXISTS idx_findings_run_severity ON findings(run_id, severity);
@@ -185,27 +199,55 @@ class Ledger:
                 """
                 INSERT INTO consumer_verdicts(
                     run_id, consumer_id, decision, mode, anchor_version,
-                    finding_count, payload_json
-                ) VALUES(?, ?, ?, ?, ?, ?, ?)
+                    read_anchor_version, write_anchor_version,
+                    shadowed_finding_count, finding_count, payload_json
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     run_id, verdict["consumer_id"], verdict["decision"], verdict["mode"],
-                    verdict["anchor_version"], len(verdict.get("findings", [])),
+                    verdict["anchor_version"], verdict.get("read_anchor_version", ""),
+                    verdict.get("write_anchor_version", ""),
+                    int(verdict.get("shadowed_finding_count", 0)),
+                    len(verdict.get("findings", [])),
                     canonical_json(verdict),
                 ),
             )
+            for window in verdict.get("window_verdicts", []):
+                connection.execute(
+                    """
+                    INSERT INTO window_verdicts(
+                        run_id, consumer_id, pair_id, read_status, write_status,
+                        read_verdict, write_verdict,
+                        read_shadowed_count, write_shadowed_count, payload_json
+                    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        run_id, window["consumer_id"], window["pair_id"],
+                        window["read_status"], window["write_status"],
+                        window["read_verdict"], window["write_verdict"],
+                        len(window.get("read_shadowed_change_ids", [])),
+                        len(window.get("write_shadowed_change_ids", [])),
+                        canonical_json(window),
+                    ),
+                )
             for finding in verdict.get("findings", []):
                 connection.execute(
                     """
                     INSERT OR REPLACE INTO findings(
                         run_id, consumer_id, change_id, severity, rule_id,
-                        evidence_path, pair_id, payload_json
-                    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+                        evidence_path, pair_id, read_status, write_status,
+                        read_shadow, write_shadow, downgrade_shadow, payload_json
+                    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         run_id, finding["consumer_id"], finding["change_id"],
                         finding["severity"], finding["rule_id"], finding["evidence_path"],
-                        finding["pair_id"], canonical_json(finding),
+                        finding["pair_id"], finding.get("read_status", "excluded"),
+                        finding.get("write_status", "excluded"),
+                        1 if finding.get("read_shadow") else 0,
+                        1 if finding.get("write_shadow") else 0,
+                        1 if finding.get("downgrade_shadow") else 0,
+                        canonical_json(finding),
                     ),
                 )
     def get_run(self, run_id: str) -> dict[str, Any] | None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .compatibility import window_states
 from .config import SEVERITY_RANK
 from .models import (
     CaseData,
@@ -13,15 +14,21 @@ from .models import (
 
 
 def _findings_for_pair(
-    verdicts: tuple[ConsumerVerdict, ...], pair: str, consumers: tuple[str, ...]
+    verdicts: tuple[ConsumerVerdict, ...], pair: str, consumers: tuple[str, ...],
+    direction: str,
 ) -> list:
     allowed = set(consumers)
+    status_attr = f"{direction}_status"
     findings = []
     for verdict in verdicts:
         if verdict.consumer_id not in allowed:
             continue
         findings.extend(
-            finding for finding in verdict.findings if finding.pair_id == pair
+            finding
+            for finding in verdict.findings
+            if finding.pair_id == pair
+            and getattr(finding, status_attr) == "exposed"
+            and not getattr(finding, f"{direction}_shadow")
         )
     return findings
 
@@ -47,16 +54,20 @@ def _blocking_reasons(findings: list) -> tuple[str, ...]:
     return tuple(sorted(set(reasons)))
 
 
-def _pending(case: CaseData, pair: str, read: bool, write: bool) -> tuple[str, ...]:
-    positions = {version.version: index for index, version in enumerate(case.versions)}
-    from_version = pair.split("->", 1)[0]
-    from_index = positions[from_version]
+def _pending(
+    case: CaseData, pair: str, direction: str
+) -> tuple[str, ...]:
+    """Consumers whose read/write window exposes this pair.
+
+    Window convergence replaces the single shared anchor: only the side whose
+    declared boundary lands on this pair keeps the consumer pending. Covered
+    and excluded pairs never select the consumer.
+    """
     selected = []
     for consumer in case.consumers:
-        anchor = max(positions[version] for version in consumer.declared_versions)
-        if anchor > from_index:
-            continue
-        if read and consumer.read_versions or write and consumer.write_versions:
+        read_states, write_states = window_states(case, consumer)
+        states = read_states if direction == "read" else write_states
+        if states.get(pair) == "exposed":
             selected.append(consumer.consumer_id)
     return tuple(sorted(set(selected)))
 
@@ -89,8 +100,8 @@ def build_plan(
     previous = None
     for pair in pairs:
         from_version, to_version = pair.split("->", 1)
-        read_consumers = _pending(case, pair, read=True, write=False)
-        read_findings = _findings_for_pair(verdicts, pair, read_consumers)
+        read_consumers = _pending(case, pair, "read")
+        read_findings = _findings_for_pair(verdicts, pair, read_consumers, "read")
         number = len(steps) + 1
         pair_step_numbers[pair] = number
         prereq = ("input fingerprint pinned",) if previous is None else (f"step {previous} completed",)
@@ -107,9 +118,9 @@ def build_plan(
             )
         )
         previous = number
-        write_consumers = _pending(case, pair, read=False, write=True)
+        write_consumers = _pending(case, pair, "write")
         if write_consumers:
-            write_findings = _findings_for_pair(verdicts, pair, write_consumers)
+            write_findings = _findings_for_pair(verdicts, pair, write_consumers, "write")
             number = len(steps) + 1
             steps.append(
                 MigrationStep(
@@ -129,7 +140,7 @@ def build_plan(
         all_consumers = tuple(sorted(consumer.consumer_id for consumer in case.consumers))
         all_findings = [
             finding for verdict in verdicts for finding in verdict.findings
-            if finding.severity in {"BLOCK", "REVIEW"}
+            if finding.effective and finding.severity in {"BLOCK", "REVIEW"}
         ]
         final_number = len(steps) + 1
         steps.append(
@@ -151,11 +162,16 @@ def build_plan(
     for pair in pairs:
         from_version = pair.split("->", 1)[0]
         pair_findings = [
-            finding for finding in (item for verdict in verdicts for item in verdict.findings)
-            if finding.pair_id == pair and finding.severity in {"BLOCK", "REVIEW"}
+            finding
+            for finding in (item for verdict in verdicts for item in verdict.findings)
+            if finding.pair_id == pair
+            and finding.effective
+            and finding.severity in {"BLOCK", "REVIEW"}
         ]
         pair_findings.sort(key=lambda item: (-SEVERITY_RANK[item.severity], item.consumer_id))
         consumers = tuple(sorted({finding.consumer_id for finding in pair_findings}))
+        if not consumers:
+            continue
         hints.append(
             RollbackHint(
                 for_step=pair_step_numbers[pair],

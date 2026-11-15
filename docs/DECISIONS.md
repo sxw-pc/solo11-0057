@@ -33,22 +33,30 @@ never hides a destructive change under a guessed correspondence. Deterministic
 tie-breaking selects the lexicographically smallest explicit candidate if
 multiple matches exist.
 
-## ADR-003: Consumer anchor is the highest declared version
+## ADR-003: Per-direction compatibility windows supersede the single anchor
 
-**Decision.** A consumer's anchor is the maximum index among all declared read
-and write versions. Every change whose `from_version` is at or after that
-anchor is evaluated for the consumer.
+**Decision.** The legacy anchor — the maximum index among all declared read
+and write versions — remains in reports for provenance, but scoping is decided
+by separate read and write windows over adjacent version pairs. Each pair is
+`exposed`, `covered`, or `excluded` per side. A reader's window opens at its
+highest declared read version; a writer's window also keeps the inbound edge
+of its lowest declared write version exposed because that is the cutover
+pair. Findings on later exposed pairs are shadowed per side once an upstream
+exposed pair blocks, and a finding is ineffective (`downgrade_shadow`) only
+when shadowed on every side it applies to.
 
-**Alternatives.** Evaluate only pairs that touch an explicitly declared
-version; evaluate only the latest pair; require separate per-version contracts.
+**Alternatives.** Keep the single anchor and evaluate every later pair for
+every consumer; evaluate only pairs touching an explicitly declared version;
+merge read and write severities by a global maximum.
 
-**Consequences.** An old consumer remains exposed to later transitions until it
-declares a newer version. This is conservative and matches the practical
-question "has this consumer adopted far enough to be safe?" It can flag a
-consumer that is not actually scheduled to read the newest schema, and it
-requires consumers to declare a current anchor to leave the exposure set. It
-also avoids a silent gap where a consumer declares only `v1` and the tool
-ignores `v2->v3`.
+**Consequences.** Read-only, write-only, and mixed contracts get distinct,
+truthful exposure sets. A mixed consumer that still reads `v1` while writing
+`v3` is exposed on the read side throughout but only on the `v2->v3` write
+cutover; the write BLOCK cannot be swallowed by a read-side PASS or shadow.
+The cost is more bookkeeping: per-pair window verdicts, per-side shadow
+flags, and planner steps whose pending-consumer sets converge as windows
+close. Consumers that declare only `v1` keep the old conservative behavior,
+so the change is backward compatible for single-version contracts.
 
 ## ADR-004: Fingerprints preserve meaningful order and sort unordered sets
 

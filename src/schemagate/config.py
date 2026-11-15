@@ -4,7 +4,7 @@ from __future__ import annotations
 
 TOOL_VERSION = "0.1.0"
 RULES_VERSION = "2026.11.1"
-REPORT_SCHEMA_VERSION = 1
+REPORT_SCHEMA_VERSION = 2
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 DEFAULT_DB_PATH = "var/schemagate.db"

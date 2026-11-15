@@ -6,33 +6,94 @@ change plus one consumer contract plus the case policy into one
 
 ## 1. Scope and aggregation
 
-For every consumer, SchemaGate computes its **anchor version**: the
-highest-index version among its declared `read_versions` and `write_versions`.
-A change is evaluated for that consumer when the change's `from_version` index
-is greater than or equal to the anchor index.
+Evaluation is driven by **per-direction windows**, not by a single shared
+anchor. For each consumer and each adjacent version pair, SchemaGate records a
+`window_verdicts` entry with separate read and write statuses:
+
+- `exposed` — the pair sits on the open boundary of the declared window on
+  that side and every change on it is evaluated for the consumer;
+- `covered` — both endpoints of the pair lie inside the declared span, so the
+  consumer has already adopted through the transition and no finding is
+  produced on that side;
+- `excluded` — no declaration on that side reaches the pair.
+
+### 1.1 Read windows
+
+A reader's window opens at its highest declared read version. For declared
+read indices `r_min … r_max`:
 
 ```text
-anchor(v1): evaluates v1->v2 and v2->v3
-anchor(v2): evaluates v2->v3
-anchor(v3): evaluates no pairs; synthetic SG-COMP-000 PASS
+pair index < r_min          excluded
+r_min <= pair index < r_max covered   (transitions already adopted)
+pair index >= r_max         exposed   (the reader still faces the new schema)
 ```
 
-This is intentionally conservative. A consumer anchored at `v1` is treated as
-exposed to every later transition until it declares a newer version. The tool
-does not assume that an old reader can safely consume a new schema merely
+A reader declaring only `v1` therefore stays exposed to every later pair; the
+tool does not assume an old reader can safely consume a new schema merely
 because its declared list is narrow.
 
-Each evaluated change produces one finding per consumer. A consumer's decision
-is the strongest finding severity:
+### 1.2 Write windows
+
+The write window is deliberately asymmetric. A writer cut over to a declared
+version must survive the inbound edge of that version, so the cutover pair
+stays `exposed` even though its target version is declared. For declared
+write indices `w_min … w_max`:
+
+```text
+pair index < w_min - 1              excluded
+pair index == w_min - 1             exposed  (the cutover inbound edge)
+w_min <= pair index < w_max         covered
+pair index >= w_max                 exposed  (future published schemas)
+```
+
+A write-only consumer declaring `v3` on a three-version case is excluded from
+`v1->v2` and exposed only on the `v2->v3` cutover; a writer declaring both
+`v2` and `v3` additionally treats `v2->v3` as covered.
+
+A consumer may declare both sides (`read_versions` and `write_versions`); the
+windows are computed independently and a pair is evaluated when it is exposed
+on at least one side. The legacy **anchor** is still reported as the highest
+declared version overall, alongside `read_anchor_version` and
+`write_anchor_version`.
+
+### 1.3 Downgrade shadows
+
+When an exposed pair contains a `BLOCK` finding on one side, every later pair
+that is *also exposed on that same side* is **shadowed** on that side: once a
+migration is blocked, the later transitions cannot be reached, so their
+findings are moot for that consumer.
+
+Shadowing is a window-containment relation, not a severity maximum:
+
+- the upstream pair and the downstream pair must both be exposed on the same
+  side. A finding on a pair that is excluded or merely covered on that side
+  cannot shadow anything, and an upstream pair outside the window leaves the
+  downstream finding fully visible;
+- read and write shadows are independent. A read-side `PASS` can never
+  swallow a write-side `BLOCK`, and a read-side shadow does not hide the same
+  finding on its write side;
+- a finding carries `read_shadow` / `write_shadow` per applicable side and is
+  flagged `downgrade_shadow: true` only when **every** side it applies to is
+  shadowed. Only fully shadowed findings leave the blocking/review buckets
+  and the consumer's aggregated decision.
+
+Each evaluated change still produces one finding per consumer; the per-pair
+`read_shadowed_change_ids` and `write_shadowed_change_ids` enumerate the mooted
+change IDs, and ineffective findings are collected under
+`downgrade_shadow_items`.
+
+A consumer's decision is the strongest severity among its effective
+(non-shadowed) findings:
 
 ```text
 BLOCK > REVIEW > PASS
 ```
 
 The case decision is the strongest consumer decision. If a consumer has no
-in-scope changes, a synthetic finding with rule `SG-COMP-000`, change ID
-`no-change`, and `PASS` is emitted. The matrix uses `N/A` for version pairs whose
-`from_version` is before that consumer's anchor.
+exposed changes, a synthetic finding with rule `SG-COMP-000`, change ID
+`no-change`, and `PASS` is emitted. The matrix uses `N/A` for version pairs
+that are exposed on neither side; pairs exposed on both sides show the
+strongest of the read and write verdicts.
 
 ## 2. Precedence
 
@@ -225,8 +286,8 @@ All examples are synthetic.
 ### 7.1 Required field under backward
 
 Consumer `reader_a` declares `read_versions: [v1]`, `mode: backward`. The pair
-`v2->v3` adds a non-null field without a default. The consumer anchor is `v1`,
-so the change is in scope:
+`v2->v3` adds a non-null field without a default. The reader's read window
+opens at `v1`, so both pairs are exposed and the change is in scope:
 
 ```text
 SG-COMP-101, BLOCK, reader_a
@@ -261,6 +322,24 @@ Consumer `probe_reader` is backward. Policy lists `add_field` in
 Consumer `full_reader` uses `full`. Adding a default is PASS backward and
 REVIEW forward. The result is REVIEW under `SG-COMP-211`. Dropping a field is
 BLOCK in both directions, so it returns `SG-COMP-302`.
+
+### 7.6 Mixed read/write contract and downgrade shadows
+
+Consumer `ml_reader` declares `read_versions: [v1]` and `write_versions: [v3]`
+on a three-version case. Its windows are:
+
+```text
+v1->v2: read exposed, write excluded
+v2->v3: read exposed, write exposed (the v3 cutover inbound edge)
+```
+
+Suppose `v1->v2` already carries a read-side BLOCK and `v2->v3` drops a field
+that is BLOCK on both directions. The `v2->v3` findings receive
+`read_shadow: true` because an upstream read BLOCK exists inside the read
+window, but `write_shadow: false` because no upstream pair is write-exposed.
+Since the finding applies to both sides and remains effective on the write
+side, `downgrade_shadow` stays `false`, the write BLOCK blocks the writer
+cutover step, and a read-side PASS can never mask it.
 
 ## 8. Determinism
 

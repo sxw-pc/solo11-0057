@@ -230,17 +230,26 @@ Changes are sorted by `(field_path, change_type, change_id)` before evaluation.
 
 For each consumer:
 
-1. Determine its anchor: the highest declared read/write version index.
-2. Include changes whose `from_version` index is at or after that anchor.
-3. Evaluate every included change and create a finding.
-4. If no changes are included, create synthetic `SG-COMP-000` PASS finding.
-5. Consumer decision is the strongest finding.
+1. Compute read and write window statuses (`exposed`, `covered`, `excluded`)
+   for every adjacent version pair from the declared versions.
+2. Evaluate a change when its pair is exposed on at least one side; tag the
+   finding with `read_status` / `write_status`.
+3. Run the downgrade-shadow pass independently per side: an exposed pair with
+   a BLOCK shadows later pairs that are also exposed on that same side.
+   Window containment decides this, not severity; read and write never shadow
+   each other.
+4. Mark `downgrade_shadow` only when every applicable side is shadowed.
+5. If no pair is exposed, create the synthetic `SG-COMP-000` PASS finding.
+6. Consumer decision is the strongest effective finding; each pair also gets a
+   `WindowVerdict` carrying both side statuses and verdicts.
 
-The anchor model intentionally keeps older consumers exposed to every later
-transition until they adopt a newer version. A consumer anchored at `v1` is
-therefore evaluated against `v1->v2` and `v2->v3`; a consumer anchored at `v2`
-is evaluated only against `v2->v3`. This is a monotone "not yet migrated"
-assumption, not a claim that the old reader literally consumes new data.
+The read window opens at the highest declared read version, so a reader
+declaring only `v1` stays exposed to every later transition; this is a
+monotone "not yet migrated" assumption, not a claim that the old reader
+literally consumes new data. The write window additionally keeps the inbound
+edge of the lowest declared write version exposed because that edge is the
+writer's cutover; pairs strictly inside a multi-version write span are
+covered.
 
 Mode-specific rules and policy precedence are in
 [COMPATIBILITY.md](COMPATIBILITY.md).
@@ -275,19 +284,22 @@ The planner turns findings and version transitions into advisory steps:
 3. A final non-reversible compatibility-retirement step.
 
 Readers are ordered before writers. Affected consumers are computed from the
-anchor model: a consumer is pending for a transition when its anchor is at or
-before the pair's from-version. A consumer appears in later transitions until
-it is treated as migrated. Status is `blocked`, `review`, or `ready` from the
-relevant findings. Blocking reasons contain consumer, message, rule ID, and
-change ID.
+window model: a consumer is pending for a transition only when that pair is
+`exposed` on the relevant read or write side; covered and excluded pairs never
+select it. As windows converge (for example, a writer that has already cut
+over), the consumer leaves later pending sets. Step status and blocking
+reasons ignore side-shadowed findings, so an upstream BLOCK does not
+double-count on unreachable later pairs; a write-side BLOCK still blocks the
+writer step even when the same finding is read-shadowed. Blocking reasons
+contain consumer, message, rule ID, and change ID.
 
 Rollback hints preserve:
 
 - The pair and target rollback version.
 - Fields that must be retained (dropped fields and both names of renamed
   fields).
-- Consumers with non-PASS findings that should roll back first.
-- The last plan step associated with that pair.
+- Consumers with effective (non-`downgrade_shadow`) non-PASS findings that
+  should roll back first; pairs with no effective findings emit no hint.
 
 The final hint covers all pairs and lists all non-PASS consumers. Actions are
 descriptive strings only. The tool never generates or runs `ALTER`, `DROP`, or

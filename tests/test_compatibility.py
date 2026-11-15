@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from schemagate.compatibility import evaluate_case, evaluate_change
+from schemagate.compatibility import evaluate_case, evaluate_change, window_states
+from schemagate.diff_engine import diff_versions
 from schemagate.models import Policy
-from tests.helpers import make_change, make_consumer
+from tests.helpers import field, make_case, make_change, make_consumer, schema
 
 
 def _policy(**kwargs):
@@ -135,6 +136,109 @@ def test_case_verdicts_are_independent_and_sorted(events_case, events_result):
     ]
     ml_reader = next(item for item in events_result["consumers"]
                      if item["consumer_id"] == "ml_reader")
-    assert ml_reader["anchor_version"] == "v2"
+    assert ml_reader["anchor_version"] == "v3"
+    assert ml_reader["read_anchor_version"] == "v1"
+    assert ml_reader["write_anchor_version"] == "v3"
     assert ml_reader["decision"] == "BLOCK"
-    assert len(ml_reader["findings"]) < len(events_result["consumers"][0]["findings"])
+
+
+def test_window_states_are_asymmetric_for_read_and_write():
+    case = make_case([schema("v1", [field("a", "string")]),
+                      schema("v2", [field("a", "string")]),
+                      schema("v3", [field("a", "string")])])
+    reader = make_consumer("backward", read_versions=("v1", "v2"))
+    read_states, write_states = window_states(case, reader)
+    assert read_states == {"v1->v2": "covered", "v2->v3": "exposed"}
+    assert set(write_states.values()) == {"excluded"}
+    writer = make_consumer("forward", read_versions=(), write_versions=("v2", "v3"))
+    read_states, write_states = window_states(case, writer)
+    assert set(read_states.values()) == {"excluded"}
+    # The cutover inbound edge stays exposed; the internal span is covered.
+    assert write_states == {"v1->v2": "exposed", "v2->v3": "covered"}
+    greenfield = make_consumer("forward", read_versions=(), write_versions=("v3",))
+    _, write_states = window_states(case, greenfield)
+    assert write_states == {"v1->v2": "excluded", "v2->v3": "exposed"}
+
+
+def test_mixed_contract_keeps_write_block_visible_behind_a_read_shadow(events_case, events_result):
+    ml_reader = next(item for item in events_result["consumers"]
+                     if item["consumer_id"] == "ml_reader")
+    windows = {item["pair_id"]: item for item in ml_reader["window_verdicts"]}
+    first = windows["v1->v2"]
+    second = windows["v2->v3"]
+    # Read window starts at v1, write window only reaches the v2->v3 cutover.
+    assert first["read_status"] == "exposed"
+    assert first["write_status"] == "excluded"
+    assert second["read_status"] == "exposed"
+    assert second["write_status"] == "exposed"
+    # Upstream BLOCK on the read side shadows downstream read findings...
+    assert len(second["read_shadowed_change_ids"]) == 8
+    assert second["write_shadowed_change_ids"] == []
+    # ...but never the write side; a write BLOCK cannot be eaten by a read PASS.
+    v23 = [f for f in ml_reader["findings"] if f["pair_id"] == "v2->v3"]
+    assert all(f["read_shadow"] for f in v23)
+    assert not any(f["write_shadow"] for f in v23)
+    assert not any(f["downgrade_shadow"] for f in v23)
+    assert ml_reader["shadowed_finding_count"] == 0
+    blocked = next(f for f in v23 if f["change_id"].endswith("payload.device:drop_field"))
+    assert blocked["severity"] == "BLOCK"
+    assert blocked["read_status"] == "exposed"
+    assert blocked["write_status"] == "exposed"
+
+
+def test_downgrade_shadow_only_marks_findings_shadowed_on_every_applicable_side(
+    events_result,
+):
+    bi = next(c for c in events_result["consumers"] if c["consumer_id"] == "bi_reader")
+    etl = next(c for c in events_result["consumers"] if c["consumer_id"] == "etl_writer")
+    # Single-direction consumers: upstream BLOCK on the same side moots the pair.
+    assert bi["shadowed_finding_count"] == 8
+    assert etl["shadowed_finding_count"] == 8
+    shadowed = events_result["downgrade_shadow_items"]
+    assert {(item["consumer_id"], item["pair_id"]) for item in shadowed} == {
+        ("bi_reader", "v2->v3"),
+        ("etl_writer", "v2->v3"),
+    }
+    assert all(item["downgrade_shadow"] for item in shadowed)
+    # Shadowed findings are removed from the blocking/review buckets.
+    blocked_ids = {(item["consumer_id"], item["change_id"])
+                   for item in events_result["blocked_items"]}
+    assert not any(
+        item["pair_id"] == "v2->v3" and item["consumer_id"] == "bi_reader"
+        for item in events_result["blocked_items"]
+    )
+    assert ("bi_reader", "demo_lake_events:v1->v2:debug_flag:drop_field") in blocked_ids
+
+
+def test_finance_reader_window_is_monotone(orders_result):
+    finance = orders_result["consumers"][0]
+    assert finance["consumer_id"] == "finance_reader"
+    assert finance["shadowed_finding_count"] == 0
+    window = finance["window_verdicts"][0]
+    assert window["pair_id"] == "v1->v2"
+    assert window["read_status"] == "exposed"
+    assert window["write_status"] == "excluded"
+    assert window["read_verdict"] == "REVIEW"
+    assert window["write_verdict"] == "N/A"
+    assert orders_result["downgrade_shadow_items"] == []
+
+
+def test_shadowing_respects_window_containment_not_severity_max():
+    # Three versions, a read-v1 backward consumer; the first pair has no BLOCK,
+    # so the downstream pair must remain fully visible even though it is harsher.
+    v1 = schema("v1", [field("id", "string"), field("note", "string")])
+    v2 = schema("v2", [field("id", "string"), field("note", "string"),
+                       field("tag", "string")])
+    v3 = schema("v3", [field("id", "string"), field("tag", "string")])
+    case = make_case([v1, v2, v3], consumers=(make_consumer("backward"),))
+    changes = (
+        *diff_versions(case, v1, v2),
+        *diff_versions(case, v2, v3),
+    )
+    verdict = evaluate_case(case, changes)[0]
+    windows = {item.pair_id: item for item in verdict.window_verdicts}
+    assert windows["v1->v2"].read_verdict == "PASS"
+    assert windows["v2->v3"].read_verdict == "BLOCK"
+    assert windows["v2->v3"].read_shadowed_change_ids == ()
+    assert verdict.decision == "BLOCK"
+    assert verdict.shadowed_finding_count == 0

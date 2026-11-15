@@ -6,12 +6,17 @@
       "change_type": "drop_field",
       "consumer_id": "bi_reader",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
       "field_path": "debug_flag",
       "message": "backward mode blocks field removal at debug_flag",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-103",
-      "severity": "BLOCK"
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v1->v2:ingest_source:add_field",
@@ -19,51 +24,17 @@
       "change_type": "add_field",
       "consumer_id": "bi_reader",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
       "field_path": "ingest_source",
       "message": "backward mode blocks a new required field at ingest_source",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-101",
-      "severity": "BLOCK"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
-      "change_summary": "timestamp unit changed for event_time: timestamp_ms -> timestamp_us",
-      "change_type": "timestamp_unit_change",
-      "consumer_id": "bi_reader",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
-      "field_path": "event_time",
-      "message": "timestamp unit changed at event_time",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-116",
-      "severity": "BLOCK"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
-      "change_summary": "field dropped: payload.device (string)",
-      "change_type": "drop_field",
-      "consumer_id": "bi_reader",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
-      "field_path": "payload.device",
-      "message": "backward mode blocks field removal at payload.device",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-103",
-      "severity": "BLOCK"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
-      "change_summary": "nested collection type changed for tags: list<string> -> list<int64>",
-      "change_type": "element_type_change",
-      "consumer_id": "bi_reader",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
-      "field_path": "tags",
-      "message": "collection element type changed at tags",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-117",
-      "severity": "BLOCK"
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v1->v2:debug_flag:drop_field",
@@ -71,12 +42,17 @@
       "change_type": "drop_field",
       "consumer_id": "etl_writer",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
       "field_path": "debug_flag",
       "message": "forward mode blocks field removal at debug_flag",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "excluded",
       "rule_id": "SG-COMP-203",
-      "severity": "BLOCK"
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v1->v2:ingest_source:add_field",
@@ -84,51 +60,63 @@
       "change_type": "add_field",
       "consumer_id": "etl_writer",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
       "field_path": "ingest_source",
       "message": "forward mode blocks a new required field at ingest_source",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "excluded",
       "rule_id": "SG-COMP-201",
-      "severity": "BLOCK"
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
-      "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
-      "change_summary": "timestamp unit changed for event_time: timestamp_ms -> timestamp_us",
-      "change_type": "timestamp_unit_change",
-      "consumer_id": "etl_writer",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
-      "field_path": "event_time",
-      "message": "timestamp unit changed at event_time",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-216",
-      "severity": "BLOCK"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
-      "change_summary": "field dropped: payload.device (string)",
+      "change_id": "demo_lake_events:v1->v2:debug_flag:drop_field",
+      "change_summary": "field dropped: debug_flag (boolean)",
       "change_type": "drop_field",
-      "consumer_id": "etl_writer",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
-      "field_path": "payload.device",
-      "message": "forward mode blocks field removal at payload.device",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-203",
-      "severity": "BLOCK"
+      "consumer_id": "ml_reader",
+      "details": {
+        "backward_rule_id": "SG-COMP-103",
+        "backward_severity": "BLOCK",
+        "forward_rule_id": "SG-COMP-203",
+        "forward_severity": "BLOCK"
+      },
+      "downgrade_shadow": false,
+      "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
+      "field_path": "debug_flag",
+      "message": "full mode blocks change at debug_flag",
+      "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-302",
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
-      "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
-      "change_summary": "nested collection type changed for tags: list<string> -> list<int64>",
-      "change_type": "element_type_change",
-      "consumer_id": "etl_writer",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
-      "field_path": "tags",
-      "message": "collection element type changed at tags",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-217",
-      "severity": "BLOCK"
+      "change_id": "demo_lake_events:v1->v2:ingest_source:add_field",
+      "change_summary": "field added: ingest_source (string)",
+      "change_type": "add_field",
+      "consumer_id": "ml_reader",
+      "details": {
+        "backward_rule_id": "SG-COMP-101",
+        "backward_severity": "BLOCK",
+        "forward_rule_id": "SG-COMP-201",
+        "forward_severity": "BLOCK"
+      },
+      "downgrade_shadow": false,
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
+      "field_path": "ingest_source",
+      "message": "full mode blocks change at ingest_source",
+      "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-302",
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
@@ -141,12 +129,17 @@
         "forward_rule_id": "SG-COMP-203",
         "forward_severity": "BLOCK"
       },
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
       "field_path": "payload.device",
       "message": "full mode blocks change at payload.device",
       "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-302",
-      "severity": "BLOCK"
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
@@ -159,12 +152,17 @@
         "forward_rule_id": "SG-COMP-217",
         "forward_severity": "BLOCK"
       },
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
       "field_path": "tags",
       "message": "full mode blocks change at tags",
       "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-302",
-      "severity": "BLOCK"
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "exposed"
     }
   ],
   "case": {
@@ -534,7 +532,9 @@
           "v2->v3": "BLOCK"
         },
         "mode": "backward",
-        "overall": "BLOCK"
+        "overall": "BLOCK",
+        "read_anchor_version": "v1",
+        "write_anchor_version": ""
       },
       {
         "anchor_version": "v1",
@@ -544,17 +544,21 @@
           "v2->v3": "BLOCK"
         },
         "mode": "forward",
-        "overall": "BLOCK"
+        "overall": "BLOCK",
+        "read_anchor_version": "",
+        "write_anchor_version": "v1"
       },
       {
-        "anchor_version": "v2",
+        "anchor_version": "v3",
         "consumer_id": "ml_reader",
         "decisions": {
-          "v1->v2": "N/A",
+          "v1->v2": "BLOCK",
           "v2->v3": "BLOCK"
         },
         "mode": "full",
-        "overall": "BLOCK"
+        "overall": "BLOCK",
+        "read_anchor_version": "v1",
+        "write_anchor_version": "v3"
       }
     ],
     "version_pairs": [
@@ -576,210 +580,333 @@
             "base_rule_id": "SG-COMP-114",
             "base_severity": "REVIEW"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.$fields.order",
           "field_path": "$fields",
           "message": "consumer override sets field_order_change from REVIEW to PASS",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-POL-003",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:$partition_spec:partition_change",
           "change_type": "partition_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.partition_spec",
           "field_path": "$partition_spec",
           "message": "partition change requires review at $partition_spec",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-PART-001",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:debug_flag:drop_field",
           "change_type": "drop_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
           "field_path": "debug_flag",
           "message": "backward mode blocks field removal at debug_flag",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-103",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:ingest_source:add_field",
           "change_type": "add_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
           "field_path": "ingest_source",
           "message": "backward mode blocks a new required field at ingest_source",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-101",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
           "change_type": "struct_field_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
           "field_path": "payload",
           "message": "nested struct fields changed at payload",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-118",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:payload.channel:add_field",
           "change_type": "add_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.channel.presence",
           "field_path": "payload.channel",
           "message": "optional field added at payload.channel",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-102",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:region:add_field",
           "change_type": "add_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.region.presence",
           "field_path": "region",
           "message": "optional field added at region",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-102",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:source_code:rename_field",
           "change_type": "rename_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
           "field_path": "source_code",
           "message": "explicit field rename requires review at source_code",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-104",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v1->v2:user_id:widen_type",
           "change_type": "widen_type",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.user_id.type",
           "field_path": "user_id",
           "message": "allowed type widening at user_id",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-105",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
           "change_type": "partition_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
           "field_path": "$partition_spec",
           "message": "partition change requires review at $partition_spec",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-PART-001",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
           "change_type": "decimal_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
           "field_path": "amount",
           "message": "decimal precision or scale changed at amount",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-115",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
           "change_type": "timestamp_unit_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
           "field_path": "event_time",
           "message": "timestamp unit changed at event_time",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-116",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
           "change_type": "nullable_to_true",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.ingest_source.nullable",
           "field_path": "ingest_source",
           "message": "nullable relaxation accepted at ingest_source",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-109",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
           "change_type": "struct_field_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
           "field_path": "payload",
           "message": "nested struct fields changed at payload",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-118",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
           "change_type": "drop_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
           "field_path": "payload.device",
           "message": "backward mode blocks field removal at payload.device",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-103",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:session_id:add_field",
           "change_type": "add_field",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
           "field_path": "session_id",
           "message": "optional field added at session_id",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-102",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
         },
         {
           "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
           "change_type": "element_type_change",
           "consumer_id": "bi_reader",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
           "field_path": "tags",
           "message": "collection element type changed at tags",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-117",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
         }
       ],
       "mode": "backward",
+      "read_anchor_version": "v1",
       "read_versions": [
         "v1"
       ],
+      "shadowed_finding_count": 8,
+      "window_verdicts": [
+        {
+          "consumer_id": "bi_reader",
+          "from_version": "v1",
+          "pair_id": "v1->v2",
+          "read_shadowed_change_ids": [],
+          "read_status": "exposed",
+          "read_verdict": "BLOCK",
+          "to_version": "v2",
+          "write_shadowed_change_ids": [],
+          "write_status": "excluded",
+          "write_verdict": "N/A"
+        },
+        {
+          "consumer_id": "bi_reader",
+          "from_version": "v2",
+          "pair_id": "v2->v3",
+          "read_shadowed_change_ids": [
+            "demo_lake_events:v2->v3:$partition_spec:partition_change",
+            "demo_lake_events:v2->v3:amount:decimal_change",
+            "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+            "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+            "demo_lake_events:v2->v3:payload.device:drop_field",
+            "demo_lake_events:v2->v3:payload:struct_field_change",
+            "demo_lake_events:v2->v3:session_id:add_field",
+            "demo_lake_events:v2->v3:tags:element_type_change"
+          ],
+          "read_status": "exposed",
+          "read_verdict": "BLOCK",
+          "to_version": "v3",
+          "write_shadowed_change_ids": [],
+          "write_status": "excluded",
+          "write_verdict": "N/A"
+        }
+      ],
+      "write_anchor_version": "",
       "write_versions": []
     },
     {
@@ -792,228 +919,549 @@
           "change_type": "field_order_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.$fields.order",
           "field_path": "$fields",
           "message": "field order changed at $fields",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-214",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:$partition_spec:partition_change",
           "change_type": "partition_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.partition_spec",
           "field_path": "$partition_spec",
           "message": "partition change requires review at $partition_spec",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-PART-001",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:debug_flag:drop_field",
           "change_type": "drop_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
           "field_path": "debug_flag",
           "message": "forward mode blocks field removal at debug_flag",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-203",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:ingest_source:add_field",
           "change_type": "add_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
           "field_path": "ingest_source",
           "message": "forward mode blocks a new required field at ingest_source",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-201",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
           "change_type": "struct_field_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
           "field_path": "payload",
           "message": "nested struct fields changed at payload",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-218",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:payload.channel:add_field",
           "change_type": "add_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.channel.presence",
           "field_path": "payload.channel",
           "message": "optional field added at payload.channel",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-202",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:region:add_field",
           "change_type": "add_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.region.presence",
           "field_path": "region",
           "message": "optional field added at region",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-202",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:source_code:rename_field",
           "change_type": "rename_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
           "field_path": "source_code",
           "message": "explicit field rename requires review at source_code",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-204",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v1->v2:user_id:widen_type",
           "change_type": "widen_type",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.user_id.type",
           "field_path": "user_id",
           "message": "allowed type widening at user_id",
           "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-205",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
           "change_type": "partition_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
           "field_path": "$partition_spec",
           "message": "partition change requires review at $partition_spec",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-PART-001",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
           "change_type": "decimal_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
           "field_path": "amount",
           "message": "decimal precision or scale changed at amount",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-215",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
           "change_type": "timestamp_unit_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
           "field_path": "event_time",
           "message": "timestamp unit changed at event_time",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-216",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
           "change_type": "nullable_to_true",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.ingest_source.nullable",
           "field_path": "ingest_source",
           "message": "nullable relaxation accepted at ingest_source",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-209",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
           "change_type": "struct_field_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
           "field_path": "payload",
           "message": "nested struct fields changed at payload",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-218",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
           "change_type": "drop_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
           "field_path": "payload.device",
           "message": "forward mode blocks field removal at payload.device",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-203",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:session_id:add_field",
           "change_type": "add_field",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
           "field_path": "session_id",
           "message": "optional field added at session_id",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-202",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": true,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
           "change_type": "element_type_change",
           "consumer_id": "etl_writer",
           "details": {},
+          "downgrade_shadow": true,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
           "field_path": "tags",
           "message": "collection element type changed at tags",
           "pair_id": "v2->v3",
+          "read_shadow": false,
+          "read_status": "excluded",
           "rule_id": "SG-COMP-217",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": true,
+          "write_status": "exposed"
         }
       ],
       "mode": "forward",
+      "read_anchor_version": "",
       "read_versions": [],
+      "shadowed_finding_count": 8,
+      "window_verdicts": [
+        {
+          "consumer_id": "etl_writer",
+          "from_version": "v1",
+          "pair_id": "v1->v2",
+          "read_shadowed_change_ids": [],
+          "read_status": "excluded",
+          "read_verdict": "N/A",
+          "to_version": "v2",
+          "write_shadowed_change_ids": [],
+          "write_status": "exposed",
+          "write_verdict": "BLOCK"
+        },
+        {
+          "consumer_id": "etl_writer",
+          "from_version": "v2",
+          "pair_id": "v2->v3",
+          "read_shadowed_change_ids": [],
+          "read_status": "excluded",
+          "read_verdict": "N/A",
+          "to_version": "v3",
+          "write_shadowed_change_ids": [
+            "demo_lake_events:v2->v3:$partition_spec:partition_change",
+            "demo_lake_events:v2->v3:amount:decimal_change",
+            "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+            "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+            "demo_lake_events:v2->v3:payload.device:drop_field",
+            "demo_lake_events:v2->v3:payload:struct_field_change",
+            "demo_lake_events:v2->v3:session_id:add_field",
+            "demo_lake_events:v2->v3:tags:element_type_change"
+          ],
+          "write_status": "exposed",
+          "write_verdict": "BLOCK"
+        }
+      ],
+      "write_anchor_version": "v1",
       "write_versions": [
         "v1"
       ]
     },
     {
-      "anchor_version": "v2",
+      "anchor_version": "v3",
       "consumer_id": "ml_reader",
       "decision": "BLOCK",
       "findings": [
+        {
+          "change_id": "demo_lake_events:v1->v2:$fields:field_order_change",
+          "change_type": "field_order_change",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-114",
+            "backward_severity": "REVIEW",
+            "forward_rule_id": "SG-COMP-214",
+            "forward_severity": "REVIEW"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.$fields.order",
+          "field_path": "$fields",
+          "message": "full mode requires review for $fields",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-301",
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:$partition_spec:partition_change",
+          "change_type": "partition_change",
+          "consumer_id": "ml_reader",
+          "details": {},
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.partition_spec",
+          "field_path": "$partition_spec",
+          "message": "consumer explicitly allows partition changes at $partition_spec",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-PART-002",
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:debug_flag:drop_field",
+          "change_type": "drop_field",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-103",
+            "backward_severity": "BLOCK",
+            "forward_rule_id": "SG-COMP-203",
+            "forward_severity": "BLOCK"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v1.fields.debug_flag.presence",
+          "field_path": "debug_flag",
+          "message": "full mode blocks change at debug_flag",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-302",
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:ingest_source:add_field",
+          "change_type": "add_field",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-101",
+            "backward_severity": "BLOCK",
+            "forward_rule_id": "SG-COMP-201",
+            "forward_severity": "BLOCK"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.ingest_source.presence",
+          "field_path": "ingest_source",
+          "message": "full mode blocks change at ingest_source",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-302",
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
+          "change_type": "struct_field_change",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-118",
+            "backward_severity": "REVIEW",
+            "forward_rule_id": "SG-COMP-218",
+            "forward_severity": "REVIEW"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
+          "field_path": "payload",
+          "message": "full mode requires review for payload",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-301",
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:payload.channel:add_field",
+          "change_type": "add_field",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-102",
+            "backward_severity": "PASS",
+            "forward_rule_id": "SG-COMP-202",
+            "forward_severity": "PASS"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.channel.presence",
+          "field_path": "payload.channel",
+          "message": "full mode is compatible for payload.channel",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-300",
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:region:add_field",
+          "change_type": "add_field",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-102",
+            "backward_severity": "PASS",
+            "forward_rule_id": "SG-COMP-202",
+            "forward_severity": "PASS"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.region.presence",
+          "field_path": "region",
+          "message": "full mode is compatible for region",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-300",
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:source_code:rename_field",
+          "change_type": "rename_field",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-104",
+            "backward_severity": "REVIEW",
+            "forward_rule_id": "SG-COMP-204",
+            "forward_severity": "REVIEW"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
+          "field_path": "source_code",
+          "message": "full mode requires review for source_code",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-301",
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
+        {
+          "change_id": "demo_lake_events:v1->v2:user_id:widen_type",
+          "change_type": "widen_type",
+          "consumer_id": "ml_reader",
+          "details": {
+            "backward_rule_id": "SG-COMP-105",
+            "backward_severity": "PASS",
+            "forward_rule_id": "SG-COMP-205",
+            "forward_severity": "PASS"
+          },
+          "downgrade_shadow": false,
+          "evidence_path": "tables.demo_lake_events.versions.v2.fields.user_id.type",
+          "field_path": "user_id",
+          "message": "full mode is compatible for user_id",
+          "pair_id": "v1->v2",
+          "read_shadow": false,
+          "read_status": "exposed",
+          "rule_id": "SG-COMP-300",
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "excluded"
+        },
         {
           "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
           "change_type": "partition_change",
           "consumer_id": "ml_reader",
           "details": {},
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
           "field_path": "$partition_spec",
           "message": "consumer explicitly allows partition changes at $partition_spec",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-PART-002",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
@@ -1025,12 +1473,17 @@
             "forward_rule_id": "SG-COMP-215",
             "forward_severity": "REVIEW"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
           "field_path": "amount",
           "message": "full mode requires review for amount",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-301",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
@@ -1040,12 +1493,17 @@
             "base_rule_id": "SG-COMP-302",
             "base_severity": "BLOCK"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
           "field_path": "event_time",
           "message": "consumer override sets timestamp_unit_change from BLOCK to REVIEW",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-POL-003",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
@@ -1057,12 +1515,17 @@
             "forward_rule_id": "SG-COMP-209",
             "forward_severity": "PASS"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.ingest_source.nullable",
           "field_path": "ingest_source",
           "message": "full mode is compatible for ingest_source",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-300",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
@@ -1074,12 +1537,17 @@
             "forward_rule_id": "SG-COMP-218",
             "forward_severity": "REVIEW"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
           "field_path": "payload",
           "message": "full mode requires review for payload",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-301",
-          "severity": "REVIEW"
+          "severity": "REVIEW",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
@@ -1091,12 +1559,17 @@
             "forward_rule_id": "SG-COMP-203",
             "forward_severity": "BLOCK"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
           "field_path": "payload.device",
           "message": "full mode blocks change at payload.device",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-302",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:session_id:add_field",
@@ -1108,12 +1581,17 @@
             "forward_rule_id": "SG-COMP-202",
             "forward_severity": "PASS"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
           "field_path": "session_id",
           "message": "full mode is compatible for session_id",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-300",
-          "severity": "PASS"
+          "severity": "PASS",
+          "write_shadow": false,
+          "write_status": "exposed"
         },
         {
           "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
@@ -1125,34 +1603,371 @@
             "forward_rule_id": "SG-COMP-217",
             "forward_severity": "BLOCK"
           },
+          "downgrade_shadow": false,
           "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
           "field_path": "tags",
           "message": "full mode blocks change at tags",
           "pair_id": "v2->v3",
+          "read_shadow": true,
+          "read_status": "exposed",
           "rule_id": "SG-COMP-302",
-          "severity": "BLOCK"
+          "severity": "BLOCK",
+          "write_shadow": false,
+          "write_status": "exposed"
         }
       ],
       "mode": "full",
+      "read_anchor_version": "v1",
       "read_versions": [
-        "v1",
-        "v2"
+        "v1"
       ],
-      "write_versions": []
+      "shadowed_finding_count": 0,
+      "window_verdicts": [
+        {
+          "consumer_id": "ml_reader",
+          "from_version": "v1",
+          "pair_id": "v1->v2",
+          "read_shadowed_change_ids": [],
+          "read_status": "exposed",
+          "read_verdict": "BLOCK",
+          "to_version": "v2",
+          "write_shadowed_change_ids": [],
+          "write_status": "excluded",
+          "write_verdict": "N/A"
+        },
+        {
+          "consumer_id": "ml_reader",
+          "from_version": "v2",
+          "pair_id": "v2->v3",
+          "read_shadowed_change_ids": [
+            "demo_lake_events:v2->v3:$partition_spec:partition_change",
+            "demo_lake_events:v2->v3:amount:decimal_change",
+            "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+            "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+            "demo_lake_events:v2->v3:payload.device:drop_field",
+            "demo_lake_events:v2->v3:payload:struct_field_change",
+            "demo_lake_events:v2->v3:session_id:add_field",
+            "demo_lake_events:v2->v3:tags:element_type_change"
+          ],
+          "read_status": "exposed",
+          "read_verdict": "BLOCK",
+          "to_version": "v3",
+          "write_shadowed_change_ids": [],
+          "write_status": "exposed",
+          "write_verdict": "BLOCK"
+        }
+      ],
+      "write_anchor_version": "v3",
+      "write_versions": [
+        "v3"
+      ]
     }
   ],
   "decision": "BLOCK",
   "disclaimer": "SchemaGate is a local, offline, declarative admission check. It reads only the case fixtures, executes no DDL, opens no data files, and contacts no catalog or network service.",
-  "input_fingerprint": "sha256:0aa1a166c285f94c9edaa9ee4488d75caaa80a171d73a7d152d17c7d53505902",
+  "downgrade_shadow_items": [
+    {
+      "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
+      "change_summary": "partition specification changed: 1 transform change(s); sort columns changed",
+      "change_type": "partition_change",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
+      "field_path": "$partition_spec",
+      "message": "partition change requires review at $partition_spec",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-PART-001",
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
+      "change_summary": "decimal changed for amount: decimal(10,2) -> decimal(12,2) (widen)",
+      "change_type": "decimal_change",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
+      "field_path": "amount",
+      "message": "decimal precision or scale changed at amount",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-115",
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+      "change_summary": "timestamp unit changed for event_time: timestamp_ms -> timestamp_us",
+      "change_type": "timestamp_unit_change",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
+      "field_path": "event_time",
+      "message": "timestamp unit changed at event_time",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-116",
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+      "change_summary": "nullable changed: ingest_source False -> True",
+      "change_type": "nullable_to_true",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.ingest_source.nullable",
+      "field_path": "ingest_source",
+      "message": "nullable relaxation accepted at ingest_source",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-109",
+      "severity": "PASS",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
+      "change_summary": "field dropped: payload.device (string)",
+      "change_type": "drop_field",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
+      "field_path": "payload.device",
+      "message": "backward mode blocks field removal at payload.device",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-103",
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
+      "change_summary": "nested struct fields changed under payload: 1 path(s)",
+      "change_type": "struct_field_change",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "field_path": "payload",
+      "message": "nested struct fields changed at payload",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-118",
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:session_id:add_field",
+      "change_summary": "field added: session_id (string)",
+      "change_type": "add_field",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
+      "field_path": "session_id",
+      "message": "optional field added at session_id",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-102",
+      "severity": "PASS",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
+      "change_summary": "nested collection type changed for tags: list<string> -> list<int64>",
+      "change_type": "element_type_change",
+      "consumer_id": "bi_reader",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
+      "field_path": "tags",
+      "message": "collection element type changed at tags",
+      "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-117",
+      "severity": "BLOCK",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
+      "change_summary": "partition specification changed: 1 transform change(s); sort columns changed",
+      "change_type": "partition_change",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
+      "field_path": "$partition_spec",
+      "message": "partition change requires review at $partition_spec",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-PART-001",
+      "severity": "REVIEW",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
+      "change_summary": "decimal changed for amount: decimal(10,2) -> decimal(12,2) (widen)",
+      "change_type": "decimal_change",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
+      "field_path": "amount",
+      "message": "decimal precision or scale changed at amount",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-215",
+      "severity": "REVIEW",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+      "change_summary": "timestamp unit changed for event_time: timestamp_ms -> timestamp_us",
+      "change_type": "timestamp_unit_change",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
+      "field_path": "event_time",
+      "message": "timestamp unit changed at event_time",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-216",
+      "severity": "BLOCK",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+      "change_summary": "nullable changed: ingest_source False -> True",
+      "change_type": "nullable_to_true",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.ingest_source.nullable",
+      "field_path": "ingest_source",
+      "message": "nullable relaxation accepted at ingest_source",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-209",
+      "severity": "PASS",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:payload.device:drop_field",
+      "change_summary": "field dropped: payload.device (string)",
+      "change_type": "drop_field",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.device.presence",
+      "field_path": "payload.device",
+      "message": "forward mode blocks field removal at payload.device",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-203",
+      "severity": "BLOCK",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
+      "change_summary": "nested struct fields changed under payload: 1 path(s)",
+      "change_type": "struct_field_change",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "field_path": "payload",
+      "message": "nested struct fields changed at payload",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-218",
+      "severity": "REVIEW",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:session_id:add_field",
+      "change_summary": "field added: session_id (string)",
+      "change_type": "add_field",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.session_id.presence",
+      "field_path": "session_id",
+      "message": "optional field added at session_id",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-202",
+      "severity": "PASS",
+      "write_shadow": true,
+      "write_status": "exposed"
+    },
+    {
+      "change_id": "demo_lake_events:v2->v3:tags:element_type_change",
+      "change_summary": "nested collection type changed for tags: list<string> -> list<int64>",
+      "change_type": "element_type_change",
+      "consumer_id": "etl_writer",
+      "details": {},
+      "downgrade_shadow": true,
+      "evidence_path": "tables.demo_lake_events.versions.v3.fields.tags.type",
+      "field_path": "tags",
+      "message": "collection element type changed at tags",
+      "pair_id": "v2->v3",
+      "read_shadow": false,
+      "read_status": "excluded",
+      "rule_id": "SG-COMP-217",
+      "severity": "BLOCK",
+      "write_shadow": true,
+      "write_status": "exposed"
+    }
+  ],
+  "input_fingerprint": "sha256:0d0ebbb8f9a5fc50d1bd304f21951b3a6aa18d685337dc447c0699ec360325b1",
   "migration_steps": [
     {
       "action": "Publish declared schema v2 for readers of v1",
       "affected_consumers": [
-        "bi_reader"
+        "bi_reader",
+        "ml_reader"
       ],
       "blocking_reasons": [
         "bi_reader: backward mode blocks a new required field at ingest_source [SG-COMP-101; demo_lake_events:v1->v2:ingest_source:add_field]",
-        "bi_reader: backward mode blocks field removal at debug_flag [SG-COMP-103; demo_lake_events:v1->v2:debug_flag:drop_field]"
+        "bi_reader: backward mode blocks field removal at debug_flag [SG-COMP-103; demo_lake_events:v1->v2:debug_flag:drop_field]",
+        "ml_reader: full mode blocks change at debug_flag [SG-COMP-302; demo_lake_events:v1->v2:debug_flag:drop_field]",
+        "ml_reader: full mode blocks change at ingest_source [SG-COMP-302; demo_lake_events:v1->v2:ingest_source:add_field]"
       ],
       "number": 1,
       "prerequisites": [
@@ -1185,30 +2000,24 @@
         "bi_reader",
         "ml_reader"
       ],
-      "blocking_reasons": [
-        "bi_reader: backward mode blocks field removal at payload.device [SG-COMP-103; demo_lake_events:v2->v3:payload.device:drop_field]",
-        "bi_reader: collection element type changed at tags [SG-COMP-117; demo_lake_events:v2->v3:tags:element_type_change]",
-        "bi_reader: timestamp unit changed at event_time [SG-COMP-116; demo_lake_events:v2->v3:event_time:timestamp_unit_change]",
-        "ml_reader: full mode blocks change at payload.device [SG-COMP-302; demo_lake_events:v2->v3:payload.device:drop_field]",
-        "ml_reader: full mode blocks change at tags [SG-COMP-302; demo_lake_events:v2->v3:tags:element_type_change]"
-      ],
+      "blocking_reasons": [],
       "number": 3,
       "prerequisites": [
         "step 2 completed"
       ],
       "reversible": true,
-      "status": "blocked",
+      "status": "ready",
       "target_version": "v3"
     },
     {
       "action": "Enable writer cutover to v3",
       "affected_consumers": [
-        "etl_writer"
+        "etl_writer",
+        "ml_reader"
       ],
       "blocking_reasons": [
-        "etl_writer: collection element type changed at tags [SG-COMP-217; demo_lake_events:v2->v3:tags:element_type_change]",
-        "etl_writer: forward mode blocks field removal at payload.device [SG-COMP-203; demo_lake_events:v2->v3:payload.device:drop_field]",
-        "etl_writer: timestamp unit changed at event_time [SG-COMP-216; demo_lake_events:v2->v3:event_time:timestamp_unit_change]"
+        "ml_reader: full mode blocks change at payload.device [SG-COMP-302; demo_lake_events:v2->v3:payload.device:drop_field]",
+        "ml_reader: full mode blocks change at tags [SG-COMP-302; demo_lake_events:v2->v3:tags:element_type_change]"
       ],
       "number": 4,
       "prerequisites": [
@@ -1228,14 +2037,10 @@
       "blocking_reasons": [
         "bi_reader: backward mode blocks a new required field at ingest_source [SG-COMP-101; demo_lake_events:v1->v2:ingest_source:add_field]",
         "bi_reader: backward mode blocks field removal at debug_flag [SG-COMP-103; demo_lake_events:v1->v2:debug_flag:drop_field]",
-        "bi_reader: backward mode blocks field removal at payload.device [SG-COMP-103; demo_lake_events:v2->v3:payload.device:drop_field]",
-        "bi_reader: collection element type changed at tags [SG-COMP-117; demo_lake_events:v2->v3:tags:element_type_change]",
-        "bi_reader: timestamp unit changed at event_time [SG-COMP-116; demo_lake_events:v2->v3:event_time:timestamp_unit_change]",
-        "etl_writer: collection element type changed at tags [SG-COMP-217; demo_lake_events:v2->v3:tags:element_type_change]",
         "etl_writer: forward mode blocks a new required field at ingest_source [SG-COMP-201; demo_lake_events:v1->v2:ingest_source:add_field]",
         "etl_writer: forward mode blocks field removal at debug_flag [SG-COMP-203; demo_lake_events:v1->v2:debug_flag:drop_field]",
-        "etl_writer: forward mode blocks field removal at payload.device [SG-COMP-203; demo_lake_events:v2->v3:payload.device:drop_field]",
-        "etl_writer: timestamp unit changed at event_time [SG-COMP-216; demo_lake_events:v2->v3:event_time:timestamp_unit_change]",
+        "ml_reader: full mode blocks change at debug_flag [SG-COMP-302; demo_lake_events:v1->v2:debug_flag:drop_field]",
+        "ml_reader: full mode blocks change at ingest_source [SG-COMP-302; demo_lake_events:v1->v2:ingest_source:add_field]",
         "ml_reader: full mode blocks change at payload.device [SG-COMP-302; demo_lake_events:v2->v3:payload.device:drop_field]",
         "ml_reader: full mode blocks change at tags [SG-COMP-302; demo_lake_events:v2->v3:tags:element_type_change]"
       ],
@@ -1259,7 +2064,7 @@
       "struct_field_change"
     ]
   },
-  "report_schema_version": 1,
+  "report_schema_version": 2,
   "review_items": [
     {
       "change_id": "demo_lake_events:v1->v2:$partition_spec:partition_change",
@@ -1267,12 +2072,17 @@
       "change_type": "partition_change",
       "consumer_id": "bi_reader",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.partition_spec",
       "field_path": "$partition_spec",
       "message": "partition change requires review at $partition_spec",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
       "rule_id": "SG-PART-001",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
@@ -1280,12 +2090,17 @@
       "change_type": "struct_field_change",
       "consumer_id": "bi_reader",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
       "field_path": "payload",
       "message": "nested struct fields changed at payload",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-118",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v1->v2:source_code:rename_field",
@@ -1293,51 +2108,17 @@
       "change_type": "rename_field",
       "consumer_id": "bi_reader",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
       "field_path": "source_code",
       "message": "explicit field rename requires review at source_code",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-104",
-      "severity": "REVIEW"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
-      "change_summary": "partition specification changed: 1 transform change(s); sort columns changed",
-      "change_type": "partition_change",
-      "consumer_id": "bi_reader",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
-      "field_path": "$partition_spec",
-      "message": "partition change requires review at $partition_spec",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-PART-001",
-      "severity": "REVIEW"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
-      "change_summary": "decimal changed for amount: decimal(10,2) -> decimal(12,2) (widen)",
-      "change_type": "decimal_change",
-      "consumer_id": "bi_reader",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
-      "field_path": "amount",
-      "message": "decimal precision or scale changed at amount",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-115",
-      "severity": "REVIEW"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
-      "change_summary": "nested struct fields changed under payload: 1 path(s)",
-      "change_type": "struct_field_change",
-      "consumer_id": "bi_reader",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
-      "field_path": "payload",
-      "message": "nested struct fields changed at payload",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-118",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v1->v2:$fields:field_order_change",
@@ -1345,12 +2126,17 @@
       "change_type": "field_order_change",
       "consumer_id": "etl_writer",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.$fields.order",
       "field_path": "$fields",
       "message": "field order changed at $fields",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "excluded",
       "rule_id": "SG-COMP-214",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v1->v2:$partition_spec:partition_change",
@@ -1358,12 +2144,17 @@
       "change_type": "partition_change",
       "consumer_id": "etl_writer",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.partition_spec",
       "field_path": "$partition_spec",
       "message": "partition change requires review at $partition_spec",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "excluded",
       "rule_id": "SG-PART-001",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
@@ -1371,12 +2162,17 @@
       "change_type": "struct_field_change",
       "consumer_id": "etl_writer",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
       "field_path": "payload",
       "message": "nested struct fields changed at payload",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "excluded",
       "rule_id": "SG-COMP-218",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v1->v2:source_code:rename_field",
@@ -1384,51 +2180,86 @@
       "change_type": "rename_field",
       "consumer_id": "etl_writer",
       "details": {},
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
       "field_path": "source_code",
       "message": "explicit field rename requires review at source_code",
       "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "excluded",
       "rule_id": "SG-COMP-204",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
-      "change_id": "demo_lake_events:v2->v3:$partition_spec:partition_change",
-      "change_summary": "partition specification changed: 1 transform change(s); sort columns changed",
-      "change_type": "partition_change",
-      "consumer_id": "etl_writer",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.partition_spec",
-      "field_path": "$partition_spec",
-      "message": "partition change requires review at $partition_spec",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-PART-001",
-      "severity": "REVIEW"
+      "change_id": "demo_lake_events:v1->v2:$fields:field_order_change",
+      "change_summary": "field order changed for 8 shared field(s)",
+      "change_type": "field_order_change",
+      "consumer_id": "ml_reader",
+      "details": {
+        "backward_rule_id": "SG-COMP-114",
+        "backward_severity": "REVIEW",
+        "forward_rule_id": "SG-COMP-214",
+        "forward_severity": "REVIEW"
+      },
+      "downgrade_shadow": false,
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.$fields.order",
+      "field_path": "$fields",
+      "message": "full mode requires review for $fields",
+      "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-301",
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
-      "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
-      "change_summary": "decimal changed for amount: decimal(10,2) -> decimal(12,2) (widen)",
-      "change_type": "decimal_change",
-      "consumer_id": "etl_writer",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
-      "field_path": "amount",
-      "message": "decimal precision or scale changed at amount",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-215",
-      "severity": "REVIEW"
-    },
-    {
-      "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
+      "change_id": "demo_lake_events:v1->v2:payload:struct_field_change",
       "change_summary": "nested struct fields changed under payload: 1 path(s)",
       "change_type": "struct_field_change",
-      "consumer_id": "etl_writer",
-      "details": {},
-      "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
+      "consumer_id": "ml_reader",
+      "details": {
+        "backward_rule_id": "SG-COMP-118",
+        "backward_severity": "REVIEW",
+        "forward_rule_id": "SG-COMP-218",
+        "forward_severity": "REVIEW"
+      },
+      "downgrade_shadow": false,
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.payload.fields",
       "field_path": "payload",
-      "message": "nested struct fields changed at payload",
-      "pair_id": "v2->v3",
-      "rule_id": "SG-COMP-218",
-      "severity": "REVIEW"
+      "message": "full mode requires review for payload",
+      "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-301",
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
+    },
+    {
+      "change_id": "demo_lake_events:v1->v2:source_code:rename_field",
+      "change_summary": "field explicitly renamed: legacy_code -> source_code",
+      "change_type": "rename_field",
+      "consumer_id": "ml_reader",
+      "details": {
+        "backward_rule_id": "SG-COMP-104",
+        "backward_severity": "REVIEW",
+        "forward_rule_id": "SG-COMP-204",
+        "forward_severity": "REVIEW"
+      },
+      "downgrade_shadow": false,
+      "evidence_path": "tables.demo_lake_events.versions.v2.fields.source_code.name",
+      "field_path": "source_code",
+      "message": "full mode requires review for source_code",
+      "pair_id": "v1->v2",
+      "read_shadow": false,
+      "read_status": "exposed",
+      "rule_id": "SG-COMP-301",
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "excluded"
     },
     {
       "change_id": "demo_lake_events:v2->v3:amount:decimal_change",
@@ -1441,12 +2272,17 @@
         "forward_rule_id": "SG-COMP-215",
         "forward_severity": "REVIEW"
       },
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.amount.type",
       "field_path": "amount",
       "message": "full mode requires review for amount",
       "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-301",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
@@ -1457,12 +2293,17 @@
         "base_rule_id": "SG-COMP-302",
         "base_severity": "BLOCK"
       },
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.event_time.type",
       "field_path": "event_time",
       "message": "consumer override sets timestamp_unit_change from BLOCK to REVIEW",
       "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
       "rule_id": "SG-POL-003",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     },
     {
       "change_id": "demo_lake_events:v2->v3:payload:struct_field_change",
@@ -1475,19 +2316,25 @@
         "forward_rule_id": "SG-COMP-218",
         "forward_severity": "REVIEW"
       },
+      "downgrade_shadow": false,
       "evidence_path": "tables.demo_lake_events.versions.v3.fields.payload.fields",
       "field_path": "payload",
       "message": "full mode requires review for payload",
       "pair_id": "v2->v3",
+      "read_shadow": true,
+      "read_status": "exposed",
       "rule_id": "SG-COMP-301",
-      "severity": "REVIEW"
+      "severity": "REVIEW",
+      "write_shadow": false,
+      "write_status": "exposed"
     }
   ],
   "rollback_hints": [
     {
       "consumers_to_rollback": [
         "bi_reader",
-        "etl_writer"
+        "etl_writer",
+        "ml_reader"
       ],
       "for_step": 2,
       "note": "Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback.",
@@ -1501,8 +2348,6 @@
     },
     {
       "consumers_to_rollback": [
-        "bi_reader",
-        "etl_writer",
         "ml_reader"
       ],
       "for_step": 4,
@@ -1532,9 +2377,9 @@
     }
   ],
   "rules_version": "2026.11.1",
-  "run_id": "run-ef77f565d234ac3b852cc19e",
+  "run_id": "run-7803c638f11e43443d0299c6",
   "summary": {
-    "block_count": 12,
+    "block_count": 8,
     "change_count": 17,
     "consumer_count": 3,
     "consumer_decisions": {
@@ -1542,9 +2387,10 @@
       "PASS": 0,
       "REVIEW": 0
     },
-    "finding_count": 42,
+    "finding_count": 51,
     "pass_count": 14,
-    "review_count": 16,
+    "review_count": 13,
+    "shadowed_finding_count": 16,
     "version_pair_count": 2
   },
   "tool_version": "0.1.0",
@@ -1655,6 +2501,107 @@
       },
       "schema_fingerprint": "sha256:dc763146ad35a5a98a2f5b94a8ed8c27f785615d0cb16718f0f9f28797cfd7bd",
       "version": "v3"
+    }
+  ],
+  "window_verdicts": [
+    {
+      "consumer_id": "bi_reader",
+      "from_version": "v1",
+      "pair_id": "v1->v2",
+      "read_shadowed_change_ids": [],
+      "read_status": "exposed",
+      "read_verdict": "BLOCK",
+      "to_version": "v2",
+      "write_shadowed_change_ids": [],
+      "write_status": "excluded",
+      "write_verdict": "N/A"
+    },
+    {
+      "consumer_id": "bi_reader",
+      "from_version": "v2",
+      "pair_id": "v2->v3",
+      "read_shadowed_change_ids": [
+        "demo_lake_events:v2->v3:$partition_spec:partition_change",
+        "demo_lake_events:v2->v3:amount:decimal_change",
+        "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+        "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+        "demo_lake_events:v2->v3:payload.device:drop_field",
+        "demo_lake_events:v2->v3:payload:struct_field_change",
+        "demo_lake_events:v2->v3:session_id:add_field",
+        "demo_lake_events:v2->v3:tags:element_type_change"
+      ],
+      "read_status": "exposed",
+      "read_verdict": "BLOCK",
+      "to_version": "v3",
+      "write_shadowed_change_ids": [],
+      "write_status": "excluded",
+      "write_verdict": "N/A"
+    },
+    {
+      "consumer_id": "etl_writer",
+      "from_version": "v1",
+      "pair_id": "v1->v2",
+      "read_shadowed_change_ids": [],
+      "read_status": "excluded",
+      "read_verdict": "N/A",
+      "to_version": "v2",
+      "write_shadowed_change_ids": [],
+      "write_status": "exposed",
+      "write_verdict": "BLOCK"
+    },
+    {
+      "consumer_id": "etl_writer",
+      "from_version": "v2",
+      "pair_id": "v2->v3",
+      "read_shadowed_change_ids": [],
+      "read_status": "excluded",
+      "read_verdict": "N/A",
+      "to_version": "v3",
+      "write_shadowed_change_ids": [
+        "demo_lake_events:v2->v3:$partition_spec:partition_change",
+        "demo_lake_events:v2->v3:amount:decimal_change",
+        "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+        "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+        "demo_lake_events:v2->v3:payload.device:drop_field",
+        "demo_lake_events:v2->v3:payload:struct_field_change",
+        "demo_lake_events:v2->v3:session_id:add_field",
+        "demo_lake_events:v2->v3:tags:element_type_change"
+      ],
+      "write_status": "exposed",
+      "write_verdict": "BLOCK"
+    },
+    {
+      "consumer_id": "ml_reader",
+      "from_version": "v1",
+      "pair_id": "v1->v2",
+      "read_shadowed_change_ids": [],
+      "read_status": "exposed",
+      "read_verdict": "BLOCK",
+      "to_version": "v2",
+      "write_shadowed_change_ids": [],
+      "write_status": "excluded",
+      "write_verdict": "N/A"
+    },
+    {
+      "consumer_id": "ml_reader",
+      "from_version": "v2",
+      "pair_id": "v2->v3",
+      "read_shadowed_change_ids": [
+        "demo_lake_events:v2->v3:$partition_spec:partition_change",
+        "demo_lake_events:v2->v3:amount:decimal_change",
+        "demo_lake_events:v2->v3:event_time:timestamp_unit_change",
+        "demo_lake_events:v2->v3:ingest_source:nullable_to_true",
+        "demo_lake_events:v2->v3:payload.device:drop_field",
+        "demo_lake_events:v2->v3:payload:struct_field_change",
+        "demo_lake_events:v2->v3:session_id:add_field",
+        "demo_lake_events:v2->v3:tags:element_type_change"
+      ],
+      "read_status": "exposed",
+      "read_verdict": "BLOCK",
+      "to_version": "v3",
+      "write_shadowed_change_ids": [],
+      "write_status": "exposed",
+      "write_verdict": "BLOCK"
     }
   ]
 }

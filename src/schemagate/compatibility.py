@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from .config import SEVERITY_RANK
 from .models import (
     CaseData,
@@ -11,6 +13,7 @@ from .models import (
     Finding,
     Policy,
     RuleOutcome,
+    WindowVerdict,
 )
 
 
@@ -226,24 +229,190 @@ def _finding(consumer_id: str, outcome: RuleOutcome, change: Change | None = Non
     )
 
 
+def _version_positions(case: CaseData) -> dict[str, int]:
+    return {version.version: index for index, version in enumerate(case.versions)}
+
+
+def window_states(
+    case: CaseData, consumer: ConsumerContract
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Return (read_status_by_pair, write_status_by_pair).
+
+    Each value is one of:
+
+    * ``exposed``  — the pair sits on the open window boundary for that side;
+    * ``covered``  — both endpoints belong to the declared span, the consumer
+      has already adopted through this transition;
+    * ``excluded`` — the declared window never reaches this pair.
+
+    Read and write windows are deliberately asymmetric. A reader's window
+    opens at its highest declared version, whereas a writer's window opens on
+    the inbound edge of its lowest declared version (the cutover pair), which
+    remains exposed; only pairs strictly inside a multi-version write span are
+    covered.
+    """
+    positions = _version_positions(case)
+    read_states: dict[str, str] = {}
+    write_states: dict[str, str] = {}
+    read_indices = sorted(positions[version] for version in consumer.read_versions)
+    write_indices = sorted(positions[version] for version in consumer.write_versions)
+    read_min = read_indices[0] if read_indices else None
+    read_max = read_indices[-1] if read_indices else None
+    write_min = write_indices[0] if write_indices else None
+    write_max = write_indices[-1] if write_indices else None
+    for index in range(len(case.versions) - 1):
+        pair = f"{case.versions[index].version}->{case.versions[index + 1].version}"
+        if read_indices:
+            if index < read_min:
+                read_states[pair] = "excluded"
+            elif index < read_max:
+                read_states[pair] = "covered"
+            else:
+                read_states[pair] = "exposed"
+        else:
+            read_states[pair] = "excluded"
+        if write_indices:
+            if index < write_min - 1:
+                write_states[pair] = "excluded"
+            elif index < write_max:
+                # The inbound edge of the lowest declared write version is the
+                # writer's cutover: it stays exposed even though its target
+                # version is declared. Internal spans are covered.
+                write_states[pair] = "exposed" if index == write_min - 1 else "covered"
+            else:
+                write_states[pair] = "exposed"
+        else:
+            write_states[pair] = "excluded"
+    return read_states, write_states
+
+
 def affected_changes(case: CaseData, consumer: ConsumerContract,
                      changes: tuple[Change, ...]) -> tuple[Change, ...]:
-    positions = {version.version: index for index, version in enumerate(case.versions)}
-    anchor = max(positions[version] for version in consumer.declared_versions)
-    return tuple(c for c in changes if positions[c.from_version] >= anchor)
+    """Changes on any pair exposed on at least one declared side."""
+    read_states, write_states = window_states(case, consumer)
+    in_window = {
+        pair for pair in read_states
+        if "exposed" in (read_states[pair], write_states[pair])
+    }
+    return tuple(change for change in changes if change.pair_id in in_window)
+
+
+def _side_severity_for(finding: Finding, direction: str) -> str:
+    """Directional severity from full-mode details; overall severity otherwise."""
+    key = f"{'backward' if direction == 'read' else 'forward'}_severity"
+    return str(finding.details.get(key, finding.severity))
+
+
+def _shadow_pass(
+    findings: list[Finding],
+    pair_order: list[str],
+    direction: str,
+) -> dict[str, set[str]]:
+    """Return change IDs mooted by an upstream BLOCK inside the same window.
+
+    Shadowing is a window-containment relation, not a severity ``max``: the
+    upstream BLOCK pair and the downstream pair must both be exposed on this
+    side. When the upstream pair is outside the window, downstream findings
+    stay visible.
+    """
+    status_attr = f"{direction}_status"
+    blocked_upstream: set[str] = set()
+    shadowed_ids: dict[str, set[str]] = {pair: set() for pair in pair_order}
+    for pair in pair_order:
+        pair_findings = [item for item in findings if item.pair_id == pair]
+        if blocked_upstream:
+            for item in pair_findings:
+                if getattr(item, status_attr) == "exposed":
+                    shadowed_ids[pair].add(item.change_id)
+        if any(
+            getattr(item, status_attr) == "exposed"
+            and _side_severity_for(item, direction) == "BLOCK"
+            and item.change_id not in shadowed_ids[pair]
+            for item in pair_findings
+        ):
+            blocked_upstream.add(pair)
+    return shadowed_ids
 
 
 def evaluate_case(case: CaseData, changes: tuple[Change, ...]) -> tuple[ConsumerVerdict, ...]:
-    positions = {version.version: index for index, version in enumerate(case.versions)}
+    positions = _version_positions(case)
+    pair_order = [
+        f"{case.versions[index].version}->{case.versions[index + 1].version}"
+        for index in range(len(case.versions) - 1)
+    ]
     verdicts = []
     for consumer in sorted(case.consumers, key=lambda item: item.consumer_id):
-        anchor_index = max(positions[v] for v in consumer.declared_versions)
-        anchor_version = case.versions[anchor_index].version
-        findings = [
-            _finding(consumer.consumer_id, evaluate_change(consumer, case.policy, change),
-                     change)
-            for change in affected_changes(case, consumer, changes)
-        ]
+        read_states, write_states = window_states(case, consumer)
+        findings: list[Finding] = []
+        read_outcomes: dict[str, list[Finding]] = {pair: [] for pair in pair_order}
+        write_outcomes: dict[str, list[Finding]] = {pair: [] for pair in pair_order}
+        for change in changes:
+            read_state = read_states[change.pair_id]
+            write_state = write_states[change.pair_id]
+            if read_state != "exposed" and write_state != "exposed":
+                continue
+            outcome = evaluate_change(consumer, case.policy, change)
+            finding = _finding(consumer.consumer_id, outcome, change)
+            finding = replace(finding, read_status=read_state, write_status=write_state)
+            if read_state == "exposed":
+                read_outcomes[change.pair_id].append(finding)
+            if write_state == "exposed":
+                write_outcomes[change.pair_id].append(finding)
+            findings.append(finding)
+        read_shadowed = _shadow_pass(findings, pair_order, "read")
+        write_shadowed = _shadow_pass(findings, pair_order, "write")
+        for index, finding in enumerate(findings):
+            is_read_shadow = finding.change_id in read_shadowed.get(finding.pair_id, set())
+            is_write_shadow = finding.change_id in write_shadowed.get(finding.pair_id, set())
+            directions = finding.applicable_directions
+            findings[index] = replace(
+                finding,
+                read_shadow=is_read_shadow,
+                write_shadow=is_write_shadow,
+                downgrade_shadow=bool(directions) and all(
+                    (is_read_shadow if direction == "read" else is_write_shadow)
+                    for direction in directions
+                ),
+            )
+        window_verdicts = []
+        for index, pair in enumerate(pair_order):
+            from_version, to_version = pair.split("->", 1)
+            read_verdict = "N/A"
+            write_verdict = "N/A"
+            if read_states[pair] == "exposed":
+                read_verdict = max(
+                    (_side_severity_for(item, "read") for item in read_outcomes[pair]),
+                    key=lambda value: SEVERITY_RANK[value], default="PASS",
+                )
+            if write_states[pair] == "exposed":
+                write_verdict = max(
+                    (_side_severity_for(item, "write") for item in write_outcomes[pair]),
+                    key=lambda value: SEVERITY_RANK[value], default="PASS",
+                )
+            window_verdicts.append(WindowVerdict(
+                consumer_id=consumer.consumer_id,
+                pair_id=pair,
+                from_version=from_version,
+                to_version=to_version,
+                read_status=read_states[pair],
+                write_status=write_states[pair],
+                read_verdict=read_verdict,
+                write_verdict=write_verdict,
+                read_shadowed_change_ids=tuple(sorted(read_shadowed[pair])),
+                write_shadowed_change_ids=tuple(sorted(write_shadowed[pair])),
+            ))
+        declared = consumer.declared_versions
+        anchor_version = case.versions[
+            max(positions[version] for version in declared)
+        ].version
+        read_anchor = (
+            case.versions[max(positions[v] for v in consumer.read_versions)].version
+            if consumer.read_versions else ""
+        )
+        write_anchor = (
+            case.versions[max(positions[v] for v in consumer.write_versions)].version
+            if consumer.write_versions else ""
+        )
         if not findings:
             findings.append(_finding(
                 consumer.consumer_id,
@@ -252,12 +421,18 @@ def evaluate_case(case: CaseData, changes: tuple[Change, ...]) -> tuple[Consumer
                 evidence_path=f"cases.{case.case_id}.consumers.{consumer.consumer_id}",
                 details={"anchor_version": anchor_version},
             ))
-        decision = max((item.severity for item in findings),
-                       key=lambda value: SEVERITY_RANK[value], default="PASS")
+        decision = max(
+            (item.severity for item in findings if item.effective),
+            key=lambda value: SEVERITY_RANK[value], default="PASS",
+        )
         verdicts.append(ConsumerVerdict(
             consumer_id=consumer.consumer_id, mode=consumer.mode,
             anchor_version=anchor_version, decision=decision,
             findings=tuple(findings), read_versions=consumer.read_versions,
             write_versions=consumer.write_versions,
+            read_anchor_version=read_anchor,
+            write_anchor_version=write_anchor,
+            window_verdicts=tuple(window_verdicts),
+            shadowed_finding_count=sum(item.downgrade_shadow for item in findings),
         ))
     return tuple(verdicts)

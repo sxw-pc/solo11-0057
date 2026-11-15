@@ -237,9 +237,17 @@ severity_overrides:
 `read_versions` and `write_versions` may be declared separately; at least one
 must be present. Version order inside either list is canonicalized. The
 **anchor version** is the highest declared version (or highest index in the
-manifest). Changes whose `from_version` is at or after the anchor are in scope
-for that consumer. This means a consumer still anchored at `v1` remains
-exposed to later transitions until it adopts a newer version.
+manifest) and is retained for provenance, but scoping uses separate
+**read/write windows**: each adjacent version pair is `exposed`, `covered`, or
+`excluded` per side. A reader's window opens at its highest declared read
+version, while a writer's window keeps the inbound edge of its lowest
+declared write version exposed (the cutover pair). Findings on later exposed
+pairs are shadowed per side once an upstream pair blocks; a finding is flagged
+`downgrade_shadow` and leaves the aggregated decision only when every
+applicable side is shadowed. A read-only `v1` consumer therefore remains
+exposed to every later transition until it adopts a newer version, while a
+mixed consumer reading `v1` and writing `v3` gets distinct read and write
+windows.
 
 Modes:
 

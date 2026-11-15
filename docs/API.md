@@ -231,10 +231,12 @@ The report object includes:
 | `version_pairs` | Adjacent pairs, change counts, change IDs, and a partition-change flag. |
 | `changes` | Every change with IDs, evidence paths, and before/after details. |
 | `policy` | Policy ID, default mode, forbidden and review lists. |
-| `consumers` | Per-consumer mode, anchor, decision, and findings. |
-| `compatibility_matrix` | Consumer rows by version pair, including `N/A`. |
-| `summary` | Counts by severity and consumer. |
-| `blocked_items`, `review_items` | Non-PASS findings with change summaries. |
+| `consumers` | Per-consumer mode, anchor and per-direction anchors, decision, window verdicts, and findings with read/write status and shadow flags. |
+| `window_verdicts` | Flat per-consumer, per-pair read/write statuses, verdicts, and shadowed change IDs. |
+| `compatibility_matrix` | Consumer rows by version pair, including `N/A`; dual-exposed pairs show the strongest side. |
+| `summary` | Counts by severity and consumer, plus `shadowed_finding_count`. |
+| `blocked_items`, `review_items` | Effective non-PASS findings with change summaries; shadowed findings are excluded. |
+| `downgrade_shadow_items` | Findings mooted by an upstream BLOCK on every applicable side. |
 | `migration_steps` | Advisory ordering, prerequisites, affected consumers, blockers, reversibility. |
 | `rollback_hints` | Targets, retained fields, consumers to roll back first, associated step. |
 | `disclaimer` | Scope notice, including no DDL and no network access. |

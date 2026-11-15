@@ -141,6 +141,44 @@ class Finding:
     evidence_path: str
     message: str
     details: dict[str, Any] = field(default_factory=dict)
+    read_status: str = "excluded"
+    write_status: str = "excluded"
+    read_shadow: bool = False
+    write_shadow: bool = False
+    downgrade_shadow: bool = False
+    @property
+    def applicable_directions(self) -> tuple[str, ...]:
+        directions = []
+        if self.read_status in {"exposed", "covered"}:
+            directions.append("read")
+        if self.write_status in {"exposed", "covered"}:
+            directions.append("write")
+        return tuple(directions)
+    @property
+    def effective(self) -> bool:
+        """A finding counts toward the decision unless every applicable side is shadowed."""
+        return not self.downgrade_shadow
+
+
+@dataclass(frozen=True)
+class WindowVerdict:
+    """Per-pair read/write window membership and verdict for one consumer.
+
+    Status is one of ``exposed`` (the pair is the open boundary the consumer
+    must survive), ``covered`` (both endpoints are declared, so the transition
+    is already inside the contract span), and ``excluded`` (no declared window
+    reaches this pair on that side).
+    """
+    consumer_id: str
+    pair_id: str
+    from_version: str
+    to_version: str
+    read_status: str
+    write_status: str
+    read_verdict: str
+    write_verdict: str
+    read_shadowed_change_ids: tuple[str, ...] = ()
+    write_shadowed_change_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -152,6 +190,10 @@ class ConsumerVerdict:
     findings: tuple[Finding, ...] = ()
     read_versions: tuple[str, ...] = ()
     write_versions: tuple[str, ...] = ()
+    read_anchor_version: str = ""
+    write_anchor_version: str = ""
+    window_verdicts: tuple[WindowVerdict, ...] = ()
+    shadowed_finding_count: int = 0
 
 
 @dataclass(frozen=True)

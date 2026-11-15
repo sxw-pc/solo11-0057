@@ -94,29 +94,57 @@ def _matrix(
     verdicts: tuple[ConsumerVerdict, ...],
     pairs: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    positions = {version.version: index for index, version in enumerate(case.versions)}
     pair_ids = [pair["pair_id"] for pair in pairs]
     rows = []
     for verdict in verdicts:
-        anchor_index = positions[verdict.anchor_version]
+        windows = {window.pair_id: window for window in verdict.window_verdicts}
         decisions = {}
-        for pair in pairs:
-            if positions[pair["from_version"]] < anchor_index:
-                decisions[pair["pair_id"]] = "N/A"
-                continue
-            matched = [f for f in verdict.findings if f.pair_id == pair["pair_id"]]
-            decisions[pair["pair_id"]] = max(
-                (finding.severity for finding in matched),
-                key=lambda item: SEVERITY_RANK[item], default="PASS",
+        for pair_id in pair_ids:
+            window = windows[pair_id]
+            side_verdicts = []
+            if window.read_status == "exposed":
+                side_verdicts.append(window.read_verdict)
+            if window.write_status == "exposed":
+                side_verdicts.append(window.write_verdict)
+            decisions[pair_id] = (
+                max(side_verdicts, key=lambda value: SEVERITY_RANK[value])
+                if side_verdicts else "N/A"
             )
         rows.append({
             "consumer_id": verdict.consumer_id,
             "mode": verdict.mode,
             "anchor_version": verdict.anchor_version,
+            "read_anchor_version": verdict.read_anchor_version,
+            "write_anchor_version": verdict.write_anchor_version,
             "overall": verdict.decision,
             "decisions": {pair_id: decisions[pair_id] for pair_id in pair_ids},
         })
     return {"version_pairs": pair_ids, "rows": rows}
+
+
+def _window_verdict_rows(verdicts: tuple[ConsumerVerdict, ...]) -> list[dict[str, Any]]:
+    rows = []
+    for verdict in verdicts:
+        for window in verdict.window_verdicts:
+            rows.append({
+                "consumer_id": window.consumer_id,
+                "pair_id": window.pair_id,
+                "from_version": window.from_version,
+                "to_version": window.to_version,
+                "read_status": window.read_status,
+                "write_status": window.write_status,
+                "read_verdict": window.read_verdict,
+                "write_verdict": window.write_verdict,
+                "read_shadowed_change_ids": list(window.read_shadowed_change_ids),
+                "write_shadowed_change_ids": list(window.write_shadowed_change_ids),
+            })
+    return rows
+
+
+def _finding_payload(finding: Any, change_map: dict[str, Any]) -> dict[str, Any]:
+    payload = asdict(finding)
+    payload["change_summary"] = change_map.get(finding.change_id, {}).get("summary", "")
+    return payload
 
 
 def build_result(case: CaseData) -> dict[str, Any]:
@@ -127,18 +155,21 @@ def build_result(case: CaseData) -> dict[str, Any]:
     decision = max((item.decision for item in verdicts),
                    key=lambda value: SEVERITY_RANK[value], default="PASS")
     findings = [finding for verdict in verdicts for finding in verdict.findings]
-    counts = {severity: sum(f.severity == severity for f in findings)
+    effective_findings = [finding for finding in findings if finding.effective]
+    counts = {severity: sum(f.severity == severity for f in effective_findings)
               for severity in ("PASS", "REVIEW", "BLOCK")}
     consumer_counts = {severity: sum(v.decision == severity for v in verdicts)
                        for severity in ("PASS", "REVIEW", "BLOCK")}
     change_map = {change.change_id: asdict(change) for change in changes}
     buckets: dict[str, list[dict[str, Any]]] = {"BLOCK": [], "REVIEW": []}
+    shadow_bucket: list[dict[str, Any]] = []
     for finding in findings:
+        if finding.downgrade_shadow:
+            shadow_bucket.append(_finding_payload(finding, change_map))
+            continue
         if finding.severity in buckets:
-            payload = asdict(finding)
-            payload["change_summary"] = change_map.get(finding.change_id, {}).get("summary", "")
-            buckets[finding.severity].append(payload)
-    for items in buckets.values():
+            buckets[finding.severity].append(_finding_payload(finding, change_map))
+    for items in (*buckets.values(), shadow_bucket):
         items.sort(key=lambda item: (item["consumer_id"], item["change_id"]))
     result: dict[str, Any] = {
         "report_schema_version": REPORT_SCHEMA_VERSION,
@@ -171,19 +202,33 @@ def build_result(case: CaseData) -> dict[str, Any]:
                 "consumer_id": verdict.consumer_id,
                 "mode": verdict.mode,
                 "anchor_version": verdict.anchor_version,
+                "read_anchor_version": verdict.read_anchor_version,
+                "write_anchor_version": verdict.write_anchor_version,
                 "read_versions": list(verdict.read_versions),
                 "write_versions": list(verdict.write_versions),
                 "decision": verdict.decision,
+                "shadowed_finding_count": verdict.shadowed_finding_count,
+                "window_verdicts": [
+                    {
+                        **asdict(window),
+                        "read_shadowed_change_ids": list(window.read_shadowed_change_ids),
+                        "write_shadowed_change_ids": list(window.write_shadowed_change_ids),
+                    }
+                    for window in verdict.window_verdicts
+                ],
                 "findings": [asdict(finding) for finding in verdict.findings],
             }
             for verdict in verdicts
         ],
+        "window_verdicts": _window_verdict_rows(verdicts),
+        "downgrade_shadow_items": shadow_bucket,
         "compatibility_matrix": _matrix(case, verdicts, pairs),
         "summary": {
             "change_count": len(changes),
             "version_pair_count": len(pairs),
             "consumer_count": len(verdicts),
             "finding_count": len(findings),
+            "shadowed_finding_count": len(shadow_bucket),
             "pass_count": counts["PASS"],
             "review_count": counts["REVIEW"],
             "block_count": counts["BLOCK"],

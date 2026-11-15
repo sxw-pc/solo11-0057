@@ -27,6 +27,8 @@ def test_markdown_report_matches_golden(events_result):
     expected = _normalized((GOLDEN / "lake_events_report.md").read_text(encoding="utf-8"))
     assert rendered == expected
     assert "Consumer compatibility matrix" in rendered
+    assert "Read/write window verdicts" in rendered
+    assert "Downgrade-shadowed findings" in rendered
     assert "Migration steps" in rendered
 
 
@@ -39,6 +41,8 @@ def test_html_report_is_self_contained(events_result):
     assert "<style>" in lowered
     assert "<link" not in lowered
     assert "BLOCK" in rendered
+    assert "read/write window verdicts" in lowered
+    assert "downgrade-shadowed findings" in lowered
     assert "Migration steps" in rendered
 
 
@@ -49,5 +53,17 @@ def test_html_and_json_outputs_are_stable(events_result):
     assert first == second
     assert "generated_at" not in first
     payload = json.loads(first)
-    assert payload["report_schema_version"] == 1
+    assert payload["report_schema_version"] == 2
     assert payload["decision"] == "BLOCK"
+    assert "window_verdicts" in payload
+    assert "downgrade_shadow_items" in payload
+    assert payload["summary"]["shadowed_finding_count"] == 16
+    ml = next(c for c in payload["consumers"] if c["consumer_id"] == "ml_reader")
+    assert ml["read_anchor_version"] == "v1"
+    assert ml["write_anchor_version"] == "v3"
+    pairs = {w["pair_id"]: w for w in ml["window_verdicts"]}
+    assert pairs["v1->v2"]["write_status"] == "excluded"
+    assert pairs["v2->v3"]["read_status"] == "exposed"
+    assert pairs["v2->v3"]["write_status"] == "exposed"
+    assert len(pairs["v2->v3"]["read_shadowed_change_ids"]) == 8
+    assert pairs["v2->v3"]["write_shadowed_change_ids"] == []

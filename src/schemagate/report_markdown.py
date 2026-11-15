@@ -49,6 +49,19 @@ def _finding_rows(findings: list[dict[str, Any]]) -> list[list[Any]]:
     ]
 
 
+def _window_rows(rows: list[dict[str, Any]]) -> list[list[Any]]:
+    return [
+        [
+            item["consumer_id"], item["pair_id"],
+            f"{item['read_status']}/{item['read_verdict']}",
+            f"{item['write_status']}/{item['write_verdict']}",
+            len(item.get("read_shadowed_change_ids", [])),
+            len(item.get("write_shadowed_change_ids", [])),
+        ]
+        for item in rows
+    ]
+
+
 def render_markdown_report(result: dict[str, Any]) -> str:
     case = result["case"]
     lines: list[str] = [
@@ -113,6 +126,12 @@ def render_markdown_report(result: dict[str, Any]) -> str:
         ["Consumer", "Mode", "Anchor", *matrix["version_pairs"], "Overall"],
         matrix_rows,
     ))
+    lines.extend(["", "## Read/write window verdicts", ""])
+    lines.extend(_table(
+        ["Consumer", "Pair", "Read status/verdict", "Write status/verdict",
+         "Read-shadowed changes", "Write-shadowed changes"],
+        _window_rows(result["window_verdicts"]),
+    ))
     lines.extend(["", "## Findings", ""])
     all_findings = [
         finding for consumer in result["consumers"] for finding in consumer["findings"]
@@ -121,7 +140,11 @@ def render_markdown_report(result: dict[str, Any]) -> str:
         ["Consumer", "Severity", "Rule", "Change ID", "Field path", "Evidence", "Message"],
         _finding_rows(all_findings),
     ))
-    for title, key in (("Blocking items", "blocked_items"), ("Review items", "review_items")):
+    for title, key in (
+        ("Blocking items", "blocked_items"),
+        ("Review items", "review_items"),
+        ("Downgrade-shadowed findings (ineffective for this consumer)", "downgrade_shadow_items"),
+    ):
         lines.extend(["", f"## {title}", ""])
         lines.extend(_table(
             ["Consumer", "Severity", "Rule", "Change ID", "Field path", "Evidence", "Message"],

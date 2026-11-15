@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 
 import pytest
 
@@ -84,3 +85,54 @@ def test_second_run_reuses_identical_report_bytes(app):
     with open(path, "rb") as handle:
         after = handle.read()
     assert before == after
+
+
+def test_window_and_shadow_fields_are_persisted(app):
+    service = _service(app)
+    outcome = service.execute("lake_events")
+    db_path = service.ledger.db_path
+    with sqlite3.connect(db_path) as connection:
+        verdict_row = connection.execute(
+            """
+            SELECT read_anchor_version, write_anchor_version, shadowed_finding_count
+            FROM consumer_verdicts
+            WHERE run_id = ? AND consumer_id = 'ml_reader'
+            """,
+            (outcome.run_id,),
+        ).fetchone()
+    assert verdict_row == ("v1", "v3", 0)
+    with sqlite3.connect(db_path) as connection:
+        bi_shadow = connection.execute(
+            """
+            SELECT COUNT(*) FROM findings
+            WHERE run_id = ? AND consumer_id = 'bi_reader' AND downgrade_shadow = 1
+            """,
+            (outcome.run_id,),
+        ).fetchone()[0]
+        ml_rows = connection.execute(
+            """
+            SELECT pair_id, read_status, write_status, read_shadow, write_shadow,
+                   downgrade_shadow
+            FROM findings
+            WHERE run_id = ? AND consumer_id = 'ml_reader'
+              AND change_id LIKE '%payload.device%'
+            """,
+            (outcome.run_id,),
+        ).fetchall()
+    assert bi_shadow == 8
+    assert ml_rows == [("v2->v3", "exposed", "exposed", 1, 0, 0)]
+    with sqlite3.connect(db_path) as connection:
+        windows = connection.execute(
+            """
+            SELECT pair_id, read_status, write_status, read_verdict, write_verdict,
+                   read_shadowed_count, write_shadowed_count
+            FROM window_verdicts
+            WHERE run_id = ? AND consumer_id = 'ml_reader'
+            ORDER BY pair_id
+            """,
+            (outcome.run_id,),
+        ).fetchall()
+    assert windows == [
+        ("v1->v2", "exposed", "excluded", "BLOCK", "N/A", 0, 0),
+        ("v2->v3", "exposed", "exposed", "BLOCK", "BLOCK", 8, 0),
+    ]
