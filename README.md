@@ -314,12 +314,15 @@ Every run writes three files under the reports directory:
   steps, rollback hints, policy, and a scope notice.
 - `<run_id>.html`: a self-contained HTML report with inline CSS.
 
-Reports include the case ID and table, input fingerprint, schema versions and
-schema fingerprints, version pairs, all changes, consumer findings, aggregate
-decision, blocked and review items, migration steps, rollback hints, tool and
-rules versions, and report schema version. They do **not** contain a generation
-timestamp or any wall-clock-dependent value. HTML reports contain no external
-URLs, CDN references, scripts, or remote styles.
+Reports include the case ID and table, input fingerprint, a hierarchical
+`fingerprint_breakdown` (per-domain, per-version-pair, and per-consumer
+sub-fingerprints with each consumer's anchor and affected pairs), schema
+versions and schema fingerprints, version pairs, all changes, consumer
+findings, aggregate decision, blocked and review items, migration steps,
+rollback hints, tool and rules versions, and report schema version. They do
+**not** contain a generation timestamp or any wall-clock-dependent value.
+HTML reports contain no external URLs, CDN references, scripts, or remote
+styles.
 
 ## HTTP API
 
@@ -353,8 +356,9 @@ Status mapping and every error code are documented in
 The default ledger is `var/schemagate.db` (SQLite, created if absent). Tables:
 
 - `cases`: observed case metadata and first/last seen timestamps.
-- `runs`: run identity, input fingerprint, tool/rules versions, decision,
-  stored result, report paths, attempt count, and timestamps.
+- `runs`: run identity, input fingerprint, hierarchical fingerprint
+  breakdown, tool/rules versions, decision, stored result, report paths,
+  attempt count, and timestamps.
 - `version_pairs`: per-pair change counts.
 - `changes`: full change payloads and evidence paths.
 - `consumer_verdicts`: per-consumer decisions and full payloads.
@@ -365,8 +369,12 @@ The idempotency key is
 `(case_id, input_fingerprint, tool_version, rules_version)`. An identical rerun
 returns the stored result, refreshes report paths and `last_seen_at`, and
 increments `attempt_count`. A result mismatch for the same key fails with
-`SG-LEDGER-001` instead of overwriting evidence. All SQL values are passed as
-parameters. Ledger records may contain timestamps; report bodies do not.
+`SG-LEDGER-001` instead of overwriting evidence. Reuse additionally
+reverse-checks the stored sub-fingerprint breakdown: the same full fingerprint
+with a different decomposition fails with `SG-LEDGER-004`, signalling that
+canonicalization dropped semantics in some declaration domain. All SQL values
+are passed as parameters. Ledger records may contain timestamps; report bodies
+do not.
 
 ## Determinism, offline behavior, and safety
 
@@ -377,7 +385,12 @@ parameters. Ledger records may contain timestamps; report bodies do not.
 - Input fingerprinting uses canonical UTF-8 JSON and SHA-256, preserving
   meaningful declared order while sorting unordered collections. Schema
   fingerprints sort field paths so pure ordering differences are caught by the
-  diff rather than mistaken for type changes.
+  diff rather than mistaken for type changes. A hierarchical
+  `fingerprint_breakdown` additionally hashes the four declaration domains
+  (schema, partition, consumer, policy), each adjacent version pair (both
+  schemas plus the pair's partition specs), and each consumer declaration,
+  alongside that consumer's anchor-derived affected pairs. Sub-fingerprints
+  explain impact but never feed run identity.
 - The run ID is `run-<24 lowercase hex chars>` derived from the case ID,
   input fingerprint, tool version, rules version, and report schema version.
   It is not clock- or randomness-derived.

@@ -146,7 +146,9 @@ store only the latest result.
 evidence under an unchanged semantic input. The attempt count records repeated
 execution. A legitimate deterministic-output change requires bumping the tool,
 rules, or report schema version, which is also good provenance practice.
-Storage grows with distinct inputs rather than with retries.
+Storage grows with distinct inputs rather than with retries. The
+sub-fingerprint reverse check (`SG-LEDGER-004`, see ADR-017) adds a second
+guard that fires even when the full hash collides.
 
 ## ADR-010: SQLite for the local ledger
 
@@ -251,3 +253,31 @@ The test does not sandbox the test runner itself, and a new dependency could
 still attempt network access outside the covered paths. The combination of
 socket-level tests, local-only code, and startup host validation is stronger
 than documentation alone.
+
+## ADR-017: Hierarchical sub-fingerprints explain impact without changing identity
+
+**Decision.** Alongside the full input fingerprint, every run carries a
+`fingerprint_breakdown`: one sub-fingerprint per declaration domain (schema,
+partition, consumer, policy), one per adjacent version pair covering both
+schemas and the pair's partition specs, and one per consumer covering its full
+declaration (mode, read/write versions, widening, partition permission,
+severity overrides). Each consumer entry lists its anchor version and the pair
+IDs that affect it, computed with the same anchor/`declared_versions` rule as
+`affected_changes`. The run ID remains a function of the full input fingerprint
+only. On ledger reuse the recomputed breakdown must equal the stored
+breakdown; a mismatch under an identical full hash raises `SG-LEDGER-004`.
+
+**Alternatives.** Recompute impact by diffing stored reports between runs;
+derive the run ID from the sub-fingerprint collection; skip the reverse check
+and trust the full hash; compute pair fingerprints per consumer.
+
+**Consequences.** Reviewers see precisely which declaration changed and which
+consumers and pairs it reaches — for example, flipping one consumer's mode
+moves only that consumer's fingerprint and leaves schema, partition, policy,
+pair fingerprints, and every affected-pair set untouched. Because sub-fingerprints
+reuse the full payload's canonical builders, a divergence between the stored
+breakdown and a recomputed one for the same full hash exposes a
+canonicalization blind spot instead of silently reusing stale evidence. Pair
+fingerprints stay global (not per consumer), so pair identity reflects only
+schema and partition semantics; consumer reach is expressed separately through
+`affected_pair_ids`.

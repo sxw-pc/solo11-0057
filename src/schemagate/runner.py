@@ -7,7 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from .canonical import canonical_json
+from .canonical import canonical_json, fingerprint_breakdown
 from .compatibility import evaluate_case
 from .config import REPORT_SCHEMA_VERSION, RULES_VERSION, SEVERITY_RANK, TOOL_VERSION
 from .diff_engine import diff_versions
@@ -149,6 +149,7 @@ def build_result(case: CaseData) -> dict[str, Any]:
         "case": {"case_id": case.case_id, "table": case.table,
                  "description": case.description},
         "input_fingerprint": case.input_fingerprint,
+        "fingerprint_breakdown": fingerprint_breakdown(case),
         "versions": [
             {
                 "version": version.version,

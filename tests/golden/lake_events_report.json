@@ -1143,6 +1143,57 @@
   ],
   "decision": "BLOCK",
   "disclaimer": "SchemaGate is a local, offline, declarative admission check. It reads only the case fixtures, executes no DDL, opens no data files, and contacts no catalog or network service.",
+  "fingerprint_breakdown": {
+    "consumers": [
+      {
+        "affected_pair_ids": [
+          "v1->v2",
+          "v2->v3"
+        ],
+        "anchor_version": "v1",
+        "consumer_id": "bi_reader",
+        "fingerprint": "sha256:927f881b986e0adda6908b8030b0273fb7d56dff201ce2f7fbd992f9c0d077d3"
+      },
+      {
+        "affected_pair_ids": [
+          "v1->v2",
+          "v2->v3"
+        ],
+        "anchor_version": "v1",
+        "consumer_id": "etl_writer",
+        "fingerprint": "sha256:e826b4b57072d65a966c00fe63a8b86466a990a11fd921dfbbf7426220ed44be"
+      },
+      {
+        "affected_pair_ids": [
+          "v2->v3"
+        ],
+        "anchor_version": "v2",
+        "consumer_id": "ml_reader",
+        "fingerprint": "sha256:5aabb6519ed2084259e8425a8e2064e9e5b8d71224bf6467d0f74cc5a71040f2"
+      }
+    ],
+    "domains": {
+      "consumer": "sha256:8a1f33d5b262c408975adceabe0a28ccbf48fdbca8540e6d088de663fe296e0c",
+      "partition": "sha256:e917f55a44cbfadca0cf76fd1eccfbf838fda6d829b5e38ba2d1264a04945bb6",
+      "policy": "sha256:807319ff36e800c9aa743a7ce433596a296fc8b62cecd8d90bd4b0964861d0e3",
+      "schema": "sha256:fb3ce8e8cf7c607c67e0d3087dcedf2030b4597d304e5fe7faad49f72d4456d8"
+    },
+    "input_fingerprint": "sha256:0aa1a166c285f94c9edaa9ee4488d75caaa80a171d73a7d152d17c7d53505902",
+    "version_pairs": [
+      {
+        "fingerprint": "sha256:7ea357ef05e9e61f3616c024db69f6597af7e022e215ca9282cf721cdb2561f0",
+        "from_version": "v1",
+        "pair_id": "v1->v2",
+        "to_version": "v2"
+      },
+      {
+        "fingerprint": "sha256:8c8ac1c3627d31783ce350c8fbf753fa45c7ae0a705ffbf370db697b6b05365e",
+        "from_version": "v2",
+        "pair_id": "v2->v3",
+        "to_version": "v3"
+      }
+    ]
+  },
   "input_fingerprint": "sha256:0aa1a166c285f94c9edaa9ee4488d75caaa80a171d73a7d152d17c7d53505902",
   "migration_steps": [
     {

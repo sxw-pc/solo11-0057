@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS cases (
 CREATE TABLE IF NOT EXISTS runs (
     run_id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(case_id),
     table_name TEXT NOT NULL, input_fingerprint TEXT NOT NULL,
+    fingerprint_breakdown_json TEXT,
     tool_version TEXT NOT NULL, rules_version TEXT NOT NULL,
     report_schema_version INTEGER NOT NULL, decision TEXT NOT NULL,
     summary_json TEXT NOT NULL, result_json TEXT NOT NULL,
@@ -76,6 +77,14 @@ class Ledger:
     def _initialize(self) -> None:
         with closing(self._connect()) as connection:
             connection.executescript(_SCHEMA)
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(runs)").fetchall()
+            }
+            if "fingerprint_breakdown_json" not in columns:
+                connection.execute(
+                    "ALTER TABLE runs ADD COLUMN fingerprint_breakdown_json TEXT"
+                )
             connection.commit()
     def register_run(
         self,
@@ -114,6 +123,7 @@ class Ledger:
                 ),
             ).fetchone()
             if existing is not None:
+                self._verify_breakdown(existing, result)
                 if existing["result_json"] != serialized:
                     raise SchemaGateError(
                         "SG-LEDGER-001",
@@ -137,14 +147,17 @@ class Ledger:
             connection.execute(
                 """
                 INSERT INTO runs(
-                    run_id, case_id, table_name, input_fingerprint, tool_version,
+                    run_id, case_id, table_name, input_fingerprint,
+                    fingerprint_breakdown_json, tool_version,
                     rules_version, report_schema_version, decision, summary_json,
                     result_json, report_json_path, report_markdown_path,
                     report_html_path, attempt_count, created_at, last_seen_at
-                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    run_id, case_id, table, fingerprint, result["tool_version"],
+                    run_id, case_id, table, fingerprint,
+                    canonical_json(result.get("fingerprint_breakdown")),
+                    result["tool_version"],
                     result["rules_version"], int(result["report_schema_version"]),
                     result["decision"], canonical_json(result["summary"]), serialized,
                     report_paths.get("json"), report_paths.get("markdown"),
@@ -153,6 +166,35 @@ class Ledger:
             )
             self._insert_details(connection, run_id, result)
             return False, 1, result
+    @staticmethod
+    def _verify_breakdown(row: sqlite3.Row, result: dict[str, Any]) -> None:
+        """Reverse-check the layered sub-fingerprints before reusing a run.
+
+        Run reuse keys on the full input fingerprint alone. A matching full
+        fingerprint whose sub-fingerprint decomposition differs from the
+        stored one means canonicalization dropped semantics in some domain
+        (two semantically different inputs collapsed onto one hash), so the
+        reuse is refused with SG-LEDGER-004 instead of silently served.
+        """
+        stored_raw = row["fingerprint_breakdown_json"]
+        if stored_raw is None:
+            # Ledgers written before hierarchical fingerprints have nothing
+            # to cross-check; the SG-LEDGER-001 byte comparison still applies.
+            return
+        stored = json.loads(stored_raw)
+        current = result.get("fingerprint_breakdown")
+        if current is not None and stored != current:
+            mismatched = sorted({
+                key
+                for key in set(stored) | set(current)
+                if stored.get(key) != current.get(key)
+            })
+            raise SchemaGateError(
+                "SG-LEDGER-004",
+                "fingerprint breakdown mismatch for the same input fingerprint; "
+                "refusing to reuse the stored run",
+                {"run_id": row["run_id"], "mismatched_sections": mismatched},
+            )
     def _insert_details(
         self, connection: sqlite3.Connection, run_id: str, result: dict[str, Any]
     ) -> None:

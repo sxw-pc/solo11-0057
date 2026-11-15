@@ -192,6 +192,10 @@ full report to keep it small. Use the `links` or the report endpoints.
   `run_id`, sets `reused: true`, and increments `attempt_count`.
 - A conflicting stored result for the same idempotency key returns
   `SG-LEDGER-001`, status 409.
+- Before reuse, the stored `fingerprint_breakdown` is reverse-checked
+  against the recomputed sub-fingerprints. A matching full fingerprint with
+  a divergent decomposition (canonicalization lost semantics in some domain)
+  returns `SG-LEDGER-004`, status 500, instead of silently reusing the run.
 
 Request failures:
 
@@ -203,6 +207,7 @@ Request failures:
 | Case file missing/invalid/structurally unsupported | various `SG-LOAD-*` | 422 |
 | Case path is absolute or escapes its directory | `SG-LOAD-013` | 400 |
 | Same idempotency key with different result bytes | `SG-LEDGER-001` | 409 |
+| Same full fingerprint with a mismatched sub-fingerprint breakdown on reuse | `SG-LEDGER-004` | 500 |
 
 ### 3.5 `GET /api/v1/runs/<run_id>`
 
@@ -397,6 +402,7 @@ do not reach HTTP; they must be fixed before the service can start.
 | `SG-LEDGER-001` | 409 | The same idempotency key maps to different stored result bytes. The ledger refuses to overwrite evidence. |
 | `SG-LEDGER-002` | 500 | Ledger path is empty. This is normally a startup/configuration failure. |
 | `SG-LEDGER-003` | 500 | Invalid limit passed directly to the ledger layer; the HTTP API normally rejects it first as `SG-API-006`. |
+| `SG-LEDGER-004` | 500 | On reuse, the recomputed hierarchical `fingerprint_breakdown` differs from the stored breakdown even though the full input fingerprint matches. Indicates canonicalization dropped semantics in some domain; the stored run is not reused and `attempt_count` is not incremented. Details carry `run_id` and `mismatched_sections`. |
 | `SG-CONFIG-001` | n/a (exit 2) | Wildcard, blank, or non-loopback bind host; invalid port; startup validation failure. |
 
 ## 6. Examples with curl

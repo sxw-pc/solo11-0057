@@ -177,7 +177,40 @@ run_id = "run-" + first 24 hex chars of
          }))
 ```
 
-No clock, randomness, environment, or filesystem timestamp enters the ID.
+No clock, randomness, environment, or filesystem timestamp enters the ID. The
+run ID is derived from the full input fingerprint only; hierarchical
+sub-fingerprints (below) never participate in run identity, so adding the
+breakdown does not change idempotency.
+
+### 5.5 Hierarchical fingerprint breakdown
+
+`fingerprint_breakdown(case)` gives reviewers a layered impact view instead of
+one opaque hash. Every sub-fingerprint reuses the same canonical builders as
+the full input payload; the breakdown explains the full hash rather than
+re-interpreting the case.
+
+- **Domain fingerprints** under `domains`: one SHA-256 each for the four
+  declaration domains `schema`, `partition`, `consumer`, and `policy`.
+- **Pair fingerprints** under `version_pairs`: one per adjacent version pair,
+  hashing both sides of the pair (each schema with declared field order) and
+  the partition spec declared on each side. A schema or partition change moves
+  exactly the pairs that touch the changed version.
+- **Consumer fingerprints** under `consumers`: one per consumer, hashing its
+  full declaration — mode, sorted read/write versions, allowed type widening,
+  partition-change permission, and severity overrides. Each entry also carries
+  `anchor_version` and `affected_pair_ids`.
+- `affected_pair_ids` reuses the anchor/`declared_versions` semantics of
+  `compatibility.affected_changes`: a pair affects a consumer when its
+  `from_version` position is at or after the consumer's anchor, i.e. exactly
+  the pairs whose changes the consumer evaluates.
+
+Changing one consumer's mode therefore moves only that consumer's
+fingerprint (plus the aggregate `consumer` domain fingerprint); schema,
+partition, and policy domain fingerprints, every pair fingerprint, other
+consumers' fingerprints, and all affected-pair sets remain unchanged.
+
+The breakdown is embedded in the result as `fingerprint_breakdown` and
+persisted in the `runs` table in its own `fingerprint_breakdown_json` column.
 
 ## 6. Diff engine
 
@@ -297,9 +330,9 @@ other DDL.
 
 `build_result` assembles a single Python dictionary containing report schema
 version, tool/rules versions, run ID, decision, case metadata, input
-fingerprint, versions, pairs, changes, policy, consumers and findings, matrix,
-summary, blocked/review items, migration steps, rollback hints, and a scope
-disclaimer.
+fingerprint, the hierarchical `fingerprint_breakdown`, versions, pairs,
+changes, policy, consumers and findings, matrix, summary, blocked/review
+items, migration steps, rollback hints, and a scope disclaimer.
 
 The JSON renderer applies canonical indentation and key sorting. Markdown uses
 stable tables and escaping. HTML uses Jinja autoescaping and embeds package CSS
@@ -319,6 +352,15 @@ new canonical serialization:
 
 - Same bytes: reuse, bump attempt count, refresh report paths and last-seen.
 - Different bytes: fail with `SG-LEDGER-001` rather than mutate history.
+
+Before either comparison, the stored hierarchical fingerprint breakdown is
+reverse-checked against the recomputed one. Run reuse keys on the full input
+fingerprint alone; if that hash matches but the sub-fingerprint decomposition
+differs, canonicalization has collapsed semantically different inputs in some
+domain, and the ledger raises `SG-LEDGER-004` instead of silently reusing the
+run. The check is skipped only for rows written before the breakdown column
+existed (the column is added lazily via `ALTER TABLE`), where the byte-level
+`SG-LEDGER-001` guard still applies.
 
 All values are parameterized. Connections are explicitly closed with
 `contextlib.closing`, including on Windows, so temporary databases can be
