@@ -11,6 +11,9 @@ from .models import ConsumerContract, PartitionKey, PartitionSpec, Policy
 from .type_rules import normalize_widening
 
 _ID_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
+_PARTITION_COLUMN_RE = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63})*$"
+)
 
 
 def _error(code: str, message: str, **details: Any) -> SchemaGateError:
@@ -176,8 +179,12 @@ def parse_partition_spec(
         if set(raw_key) - key_allowed:
             raise _error("SG-LOAD-009", "unknown partition key attributes", key=raw_key.get("column"))
         column = _text(raw_key.get("column"), "partition key column", "SG-LOAD-009")
-        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$", column):
-            raise _error("SG-LOAD-009", "partition column is not a simple identifier", column=column)
+        if not _PARTITION_COLUMN_RE.match(column):
+            raise _error(
+                "SG-LOAD-009",
+                "partition column must be a dotted path of simple identifiers",
+                column=column,
+            )
         if column in seen_columns:
             raise _error("SG-LOAD-009", "duplicate partition key column", column=column)
         seen_columns.add(column)

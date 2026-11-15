@@ -157,14 +157,73 @@ def _base_rule(change: Change, consumer: ConsumerContract) -> RuleOutcome:
     raise AssertionError(f"unvalidated compatibility mode: {consumer.mode}")
 
 
+def _partition_consistency(change: Change) -> tuple[str, ...]:
+    """Return the blocked partition columns recorded by the diff engine."""
+    blocked = change.details.get("blocked_keys", ())
+    if not isinstance(blocked, (list, tuple, set, frozenset)):
+        return ()
+    return tuple(sorted(str(item) for item in blocked))
+
+
+def _consistency_details(change: Change,
+                         blocked: tuple[str, ...]) -> dict[str, object]:
+    evidence = change.details.get("consistency_evidence", ())
+    return {
+        "blocked_keys": list(blocked),
+        "consistency_evidence": list(evidence)
+        if isinstance(evidence, (list, tuple))
+        else evidence,
+    }
+
+
+def _inconsistent_partition(consumer: ConsumerContract, change: Change,
+                            blocked: tuple[str, ...]) -> RuleOutcome:
+    """Apply the partition path while enforcing the consistency floor.
+
+    A key that does not exist in the target schema, uses an implicit nested
+    path, or declares an incompatible transform can never be downgraded to
+    PASS: the outcome is at least REVIEW. An explicit consumer severity
+    override may still raise it to BLOCK, but ``allow_partition_change`` only
+    grants PASS and therefore cannot clear the floor.
+    """
+    details: dict[str, object] = _consistency_details(change, blocked)
+    details.update(base_rule_id="SG-PART-003", base_severity="REVIEW")
+    override = consumer.severity_overrides.get("partition_change")
+    if override == "BLOCK":
+        return _outcome(
+            "BLOCK", "SG-POL-003",
+            "consumer override sets partition_change to BLOCK; consistency "
+            f"failure at {change.field_path}: {', '.join(blocked)}",
+            **details,
+        )
+    if override is not None:
+        return _outcome(
+            "REVIEW", "SG-POL-003",
+            f"consumer override sets partition_change to {override}; consistency "
+            f"failure keeps it at REVIEW: {', '.join(blocked)}",
+            **details,
+        )
+    return _outcome(
+        "REVIEW", "SG-PART-003",
+        "partition keys are inconsistent with the target schema at "
+        f"{change.field_path}: " + ", ".join(blocked),
+        **details,
+    )
+
+
 def evaluate_change(consumer: ConsumerContract, policy: Policy, change: Change) -> RuleOutcome:
     """Apply policy precedence and return the final, explainable outcome."""
     if change.change_type == "partition_change":
+        blocked = _partition_consistency(change)
         if "partition_change" in policy.forbidden_changes:
+            details = _consistency_details(change, blocked) if blocked else {}
             return _outcome(
                 "BLOCK", "SG-POL-001",
                 f"policy forbids partition changes at {change.field_path}",
+                **details,
             )
+        if blocked:
+            return _inconsistent_partition(consumer, change, blocked)
         override = consumer.severity_overrides.get("partition_change")
         if override is not None:
             return _outcome(

@@ -192,6 +192,7 @@ def diff_versions(case: CaseData, old: SchemaVersion,
     differ.changes.extend(diff_partition_specs(
         case.table, old.version, new.version,
         case.partitions.get(old.version), case.partitions.get(new.version),
+        target_schema=new,
     ))
     return tuple(sorted(differ.changes, key=lambda item: (
         item.field_path, item.change_type, item.change_id
