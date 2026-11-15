@@ -284,14 +284,38 @@ change ID.
 Rollback hints preserve:
 
 - The pair and target rollback version.
-- Fields that must be retained (dropped fields and both names of renamed
-  fields).
+- Fields that must be retained, derived from the consumers actually rolling
+  back rather than from the pair's drop/rename changes alone:
+  - every flat field path (including struct children) that a consumer in
+    `consumers_to_rollback` reads or writes in a declared version at or after
+    the rollback point;
+  - every path used by the same logical field identity in any other version.
 - Consumers with non-PASS findings that should roll back first.
 - The last plan step associated with that pair.
 
-The final hint covers all pairs and lists all non-PASS consumers. Actions are
-descriptive strings only. The tool never generates or runs `ALTER`, `DROP`, or
-other DDL.
+Field identity is normalized across versions with a union-find
+(`compatibility.FieldIdentity`). Occurrences are linked when they share a path
+between adjacent versions, share a `field_id`, cross-reference through
+`aliases`, or are joined by an explicit `rename_field` change's
+`old_path`/`new_path`. This covers explicit renames, a field dropped and later
+re-added with the same `field_id` or alias, and struct child paths reorganized
+under a renamed parent. Same-name occurrences separated by a version where the
+field is absent are not merged without id or alias evidence.
+
+A logical field that exists before the rollback point, is absent from the
+rollback-point schema, and reappears in a later version under the same name,
+`field_id`, or aliases is also retained. Each such case is recorded in the
+hint's `details.reuse_across_rollback` with the retained paths, the
+`field_id` when known, the affected consumer ids, and the source version pairs
+(drop pair and re-add pair). `details.consumer_versions` lists, per consumer,
+the read/write versions at or after the rollback point and the field paths
+they touch. `retain_fields` is a sorted, de-duplicated tuple so repeated runs
+emit identical output.
+
+The final hint covers all pairs and lists all non-PASS consumers; its reuse
+annotations merge per-pair entries with the same retained path set. Actions
+are descriptive strings only. The tool never generates or runs `ALTER`,
+`DROP`, or other DDL.
 
 ## 10. Result and reports
 

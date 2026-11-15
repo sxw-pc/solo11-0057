@@ -236,7 +236,7 @@ The report object includes:
 | `summary` | Counts by severity and consumer. |
 | `blocked_items`, `review_items` | Non-PASS findings with change summaries. |
 | `migration_steps` | Advisory ordering, prerequisites, affected consumers, blockers, reversibility. |
-| `rollback_hints` | Targets, retained fields, consumers to roll back first, associated step. |
+| `rollback_hints` | Targets, retained fields (derived from consumer read/write versions and cross-version field identity), consumers to roll back first, associated step, and `details` carrying per-consumer version/path evidence plus `reuse_across_rollback` annotations. |
 | `disclaimer` | Scope notice, including no DDL and no network access. |
 
 A missing run returns `SG-API-003`, status 404.

@@ -174,6 +174,7 @@ class RollbackHint:
     retain_fields: tuple[str, ...]
     consumers_to_rollback: tuple[str, ...]
     note: str
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

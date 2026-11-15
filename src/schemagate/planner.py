@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from .compatibility import (
+    build_field_identity,
+    consumer_rollback_versions,
+    merge_reuse_annotations,
+    rollback_retain_plan,
+)
 from .config import SEVERITY_RANK
 from .models import (
     CaseData,
@@ -61,17 +67,6 @@ def _pending(case: CaseData, pair: str, read: bool, write: bool) -> tuple[str, .
     return tuple(sorted(set(selected)))
 
 
-def _retain_fields(pair_changes: tuple[Change, ...]) -> tuple[str, ...]:
-    retained = set()
-    for change in pair_changes:
-        if change.change_type == "drop_field":
-            retained.add(change.field_path)
-        elif change.change_type == "rename_field":
-            retained.add(str(change.details.get("old_path", change.field_path)))
-            retained.add(str(change.details.get("new_path", change.field_path)))
-    return tuple(sorted(retained))
-
-
 def build_plan(
     case: CaseData,
     changes: tuple[Change, ...],
@@ -81,9 +76,6 @@ def build_plan(
         f"{case.versions[index].version}->{case.versions[index + 1].version}"
         for index in range(len(case.versions) - 1)
     ]
-    changes_by_pair = {pair: [] for pair in pairs}
-    for change in changes:
-        changes_by_pair.setdefault(change.pair_id, []).append(change)
     steps: list[MigrationStep] = []
     pair_step_numbers: dict[str, int] = {}
     previous = None
@@ -147,6 +139,7 @@ def build_plan(
         previous_final = final_number
     else:
         previous_final = previous
+    identity = build_field_identity(case, changes)
     hints = []
     for pair in pairs:
         from_version = pair.split("->", 1)[0]
@@ -156,28 +149,40 @@ def build_plan(
         ]
         pair_findings.sort(key=lambda item: (-SEVERITY_RANK[item.severity], item.consumer_id))
         consumers = tuple(sorted({finding.consumer_id for finding in pair_findings}))
+        plan = rollback_retain_plan(case, from_version, consumers, identity)
         hints.append(
             RollbackHint(
                 for_step=pair_step_numbers[pair],
                 version_pair=pair,
                 rollback_to=from_version,
-                retain_fields=_retain_fields(tuple(changes_by_pair[pair])),
+                retain_fields=tuple(plan["retain_fields"]),
                 consumers_to_rollback=consumers,
                 note=(
                     "Keep old and new field names side by side until consumers move; "
                     "this tool emits no DDL and executes no rollback."
                 ),
+                details={
+                    "rollback_point": plan["rollback_point"],
+                    "consumer_versions": plan["consumer_versions"],
+                    "reuse_across_rollback": plan["reuse_across_rollback"],
+                },
             )
         )
     if previous_final is not None and len(case.versions) > 1:
         review_consumers = tuple(sorted({
             verdict.consumer_id for verdict in verdicts if verdict.decision != "PASS"
         }))
+        reuse_entries = tuple(
+            entry
+            for hint in hints
+            for entry in hint.details["reuse_across_rollback"]
+        )
+        final_version = case.versions[-1].version
         hints.append(
             RollbackHint(
                 for_step=previous_final,
                 version_pair="all",
-                rollback_to=case.versions[-1].version,
+                rollback_to=final_version,
                 retain_fields=tuple(sorted({
                     field for hint in hints for field in hint.retain_fields
                 })),
@@ -186,6 +191,13 @@ def build_plan(
                     "Re-enable the prior compatibility declarations before retiring them; "
                     "no external catalog or migration command is invoked."
                 ),
+                details={
+                    "rollback_point": final_version,
+                    "consumer_versions": consumer_rollback_versions(
+                        case, review_consumers, final_version
+                    ),
+                    "reuse_across_rollback": merge_reuse_annotations(reuse_entries),
+                },
             )
         )
     return tuple(steps), tuple(hints)

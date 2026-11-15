@@ -1489,12 +1489,65 @@
         "bi_reader",
         "etl_writer"
       ],
+      "details": {
+        "consumer_versions": {
+          "bi_reader": {
+            "field_paths": [
+              "amount",
+              "debug_flag",
+              "event_date",
+              "event_id",
+              "event_time",
+              "legacy_code",
+              "payload",
+              "payload.action",
+              "payload.device",
+              "tags",
+              "user_id"
+            ],
+            "read_versions": [
+              "v1"
+            ],
+            "write_versions": []
+          },
+          "etl_writer": {
+            "field_paths": [
+              "amount",
+              "debug_flag",
+              "event_date",
+              "event_id",
+              "event_time",
+              "legacy_code",
+              "payload",
+              "payload.action",
+              "payload.device",
+              "tags",
+              "user_id"
+            ],
+            "read_versions": [],
+            "write_versions": [
+              "v1"
+            ]
+          }
+        },
+        "reuse_across_rollback": [],
+        "rollback_point": "v1"
+      },
       "for_step": 2,
       "note": "Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback.",
       "retain_fields": [
+        "amount",
         "debug_flag",
+        "event_date",
+        "event_id",
+        "event_time",
         "legacy_code",
-        "source_code"
+        "payload",
+        "payload.action",
+        "payload.device",
+        "source_code",
+        "tags",
+        "user_id"
       ],
       "rollback_to": "v1",
       "version_pair": "v1->v2"
@@ -1505,10 +1558,60 @@
         "etl_writer",
         "ml_reader"
       ],
+      "details": {
+        "consumer_versions": {
+          "bi_reader": {
+            "field_paths": [],
+            "read_versions": [],
+            "write_versions": []
+          },
+          "etl_writer": {
+            "field_paths": [],
+            "read_versions": [],
+            "write_versions": []
+          },
+          "ml_reader": {
+            "field_paths": [
+              "amount",
+              "event_date",
+              "event_id",
+              "event_time",
+              "ingest_source",
+              "payload",
+              "payload.action",
+              "payload.channel",
+              "payload.device",
+              "region",
+              "source_code",
+              "tags",
+              "user_id"
+            ],
+            "read_versions": [
+              "v2"
+            ],
+            "write_versions": []
+          }
+        },
+        "reuse_across_rollback": [],
+        "rollback_point": "v2"
+      },
       "for_step": 4,
       "note": "Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback.",
       "retain_fields": [
-        "payload.device"
+        "amount",
+        "event_date",
+        "event_id",
+        "event_time",
+        "ingest_source",
+        "legacy_code",
+        "payload",
+        "payload.action",
+        "payload.channel",
+        "payload.device",
+        "region",
+        "source_code",
+        "tags",
+        "user_id"
       ],
       "rollback_to": "v2",
       "version_pair": "v2->v3"
@@ -1519,13 +1622,45 @@
         "etl_writer",
         "ml_reader"
       ],
+      "details": {
+        "consumer_versions": {
+          "bi_reader": {
+            "field_paths": [],
+            "read_versions": [],
+            "write_versions": []
+          },
+          "etl_writer": {
+            "field_paths": [],
+            "read_versions": [],
+            "write_versions": []
+          },
+          "ml_reader": {
+            "field_paths": [],
+            "read_versions": [],
+            "write_versions": []
+          }
+        },
+        "reuse_across_rollback": [],
+        "rollback_point": "v3"
+      },
       "for_step": 5,
       "note": "Re-enable the prior compatibility declarations before retiring them; no external catalog or migration command is invoked.",
       "retain_fields": [
+        "amount",
         "debug_flag",
+        "event_date",
+        "event_id",
+        "event_time",
+        "ingest_source",
         "legacy_code",
+        "payload",
+        "payload.action",
+        "payload.channel",
         "payload.device",
-        "source_code"
+        "region",
+        "source_code",
+        "tags",
+        "user_id"
       ],
       "rollback_to": "v3",
       "version_pair": "all"

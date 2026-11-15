@@ -153,9 +153,9 @@
 
 | For step | Pair | Roll back to | Retain fields | Consumers to roll back first | Note |
 | --- | --- | --- | --- | --- | --- |
-| 2 | v1->v2 | v1 | debug_flag, legacy_code, source_code | bi_reader, etl_writer | Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback. |
-| 4 | v2->v3 | v2 | payload.device | bi_reader, etl_writer, ml_reader | Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback. |
-| 5 | all | v3 | debug_flag, legacy_code, payload.device, source_code | bi_reader, etl_writer, ml_reader | Re-enable the prior compatibility declarations before retiring them; no external catalog or migration command is invoked. |
+| 2 | v1->v2 | v1 | amount, debug_flag, event_date, event_id, event_time, legacy_code, payload, payload.action, payload.device, source_code, tags, user_id | bi_reader, etl_writer | Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback. |
+| 4 | v2->v3 | v2 | amount, event_date, event_id, event_time, ingest_source, legacy_code, payload, payload.action, payload.channel, payload.device, region, source_code, tags, user_id | bi_reader, etl_writer, ml_reader | Keep old and new field names side by side until consumers move; this tool emits no DDL and executes no rollback. |
+| 5 | all | v3 | amount, debug_flag, event_date, event_id, event_time, ingest_source, legacy_code, payload, payload.action, payload.channel, payload.device, region, source_code, tags, user_id | bi_reader, etl_writer, ml_reader | Re-enable the prior compatibility declarations before retiring them; no external catalog or migration command is invoked. |
 
 ## Policy
 
